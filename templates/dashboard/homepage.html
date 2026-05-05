@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nile Analytics — Intelligence meets Precision</title>
+
+    <!-- Fonts: Midnight Luxe Preset -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Locomotive Scroll -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian:   '#0D0D12',
+                        accent:  '#E63B2E',
+                        ivory:      '#FAF8F5',
+                        slate:      '#2A2A35',
+                    },
+                    fontFamily: {
+                        sans:    ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Playfair Display', 'serif'],
+                        mono:    ['JetBrains Mono', 'monospace'],
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                        '5xl': '3rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ── Base ─────────────────────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+        body { background: #0D0D12; color: #FAF8F5; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        ::selection { background: #E63B2E; color: #0D0D12; }
+
+        /* ── Noise Overlay ────────────────────────────────── */
+        .noise-overlay {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.05;
+        }
+
+        /* ── Typography ───────────────────────────────────── */
+        .font-display { font-family: 'Playfair Display', serif; }
+        .tracking-brutal { letter-spacing: -0.04em; }
+        .tracking-wide-mono { letter-spacing: 0.2em; }
+
+        /* ── Magnetic Button ──────────────────────────────── */
+        .btn-magnetic {
+            position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.5s ease;
+        }
+        .btn-magnetic:hover { transform: scale(1.03); }
+        .btn-magnetic .btn-bg {
+            position: absolute; inset: 0; transform: translateY(100%);
+            transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .btn-magnetic:hover .btn-bg { transform: translateY(0); }
+        .btn-magnetic .btn-label { position: relative; z-index: 2; }
+
+        /* ── Interactive lift ─────────────────────────────── */
+        .lift { transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .lift:hover { transform: translateY(-1px); }
+
+        /* ── Card surface ─────────────────────────────────── */
+        .card-surface {
+            background: #FAF8F5; border: 1px solid rgba(201,168,76,0.12); border-radius: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+
+        /* ── Shuffler ─────────────────────────────────────── */
+        .shuffler-stack { position: relative; height: 120px; }
+        .shuffler-card {
+            position: absolute; left: 0; right: 0; padding: 16px 20px;
+            border-radius: 1rem; border: 1px solid rgba(42,42,53,0.1);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* ── Typewriter cursor ────────────────────────────── */
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* ── Pulse dot ────────────────────────────────────── */
+        .pulse-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #E63B2E;
+            animation: pulse-ring 2s ease infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(201,168,76,0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
+            100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+        }
+
+        /* ── Stacking cards ───────────────────────────────── */
+        .stack-card {
+            position: sticky; top: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            will-change: transform, filter, opacity;
+        }
+
+        /* ── Waveform ─────────────────────────────────────── */
+        .waveform-path {
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            animation: wave-draw 3s ease-in-out infinite alternate;
+        }
+        @keyframes wave-draw { to { stroke-dashoffset: 0; } }
+
+        /* ── Scanning line ────────────────────────────────── */
+        .scan-line {
+            position: absolute; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #E63B2E, transparent);
+            animation: scan 3s ease-in-out infinite;
+        }
+        @keyframes scan { 0%{top:0;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0} }
+
+        /* ── Rotating motif ───────────────────────────────── */
+        .rotate-slow { animation: rotate-infinite 20s linear infinite; }
+        @keyframes rotate-infinite { to { transform: rotate(360deg); } }
+
+        /* ── Navbar morph ─────────────────────────────────── */
+        .nav-pill {
+            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, color 0.5s ease;
+        }
+        .nav-pill.scrolled {
+            background: rgba(13,13,18,0.85) !important;
+            backdrop-filter: blur(24px) saturate(1.8);
+            -webkit-backdrop-filter: blur(24px) saturate(1.8);
+            border-color: rgba(201,168,76,0.2) !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .nav-pill.scrolled .nav-brand { color: #FAF8F5; }
+        .nav-pill.scrolled .nav-links a { color: rgba(250,248,245,0.7); }
+        .nav-pill.scrolled .nav-links a:hover { color: #E63B2E; }
+
+        /* ── Locomotive overrides ─────────────────────────── */
+        html.has-scroll-smooth { overflow: hidden; }
+        html.has-scroll-smooth body { overflow: hidden; }
+        .has-scroll-smooth [data-scroll-container] { min-height: 100vh; }
+        .c-scrollbar_thumb { background-color: rgba(230,59,46,0.4); width: 4px; border-radius: 4px; }
+
+        /* ── Responsive ───────────────────────────────────── */
+        @media (max-width: 768px) {
+            .hero-heading { font-size: 2.5rem !important; }
+            .hero-serif   { font-size: 3.5rem !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Locomotive wrapper -->
+<div id="loco-wrapper" data-scroll-container>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NOISE OVERLAY — SVG feTurbulence grain
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<svg class="noise-overlay" xmlns="http://www.w3.org/2000/svg">
+    <filter id="noiseFilter">
+        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+        <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+</svg>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     A. NAVBAR — The Floating Island
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<nav id="navbar" class="nav-pill fixed top-6 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-6 px-8 py-3 rounded-full border border-transparent">
+    <!-- Logo -->
+    <a href="{% url 'homepage' %}" class="flex items-center gap-2 lift">
+        <span class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+            <span class="text-obsidian text-sm font-bold font-mono">N</span>
+        </span>
+        <span class="nav-brand font-semibold text-sm tracking-tight text-ivory hidden sm:inline">Nile Analytics</span>
+    </a>
+
+    <!-- Links -->
+    <div class="nav-links hidden md:flex items-center gap-6 text-sm text-ivory/60">
+        <a href="#features" class="lift hover:text-accent transition-colors duration-300">Features</a>
+        <a href="#philosophy" class="lift hover:text-accent transition-colors duration-300">Philosophy</a>
+        <a href="#protocol" class="lift hover:text-accent transition-colors duration-300">Protocol</a>
+    </div>
+
+    <!-- CTA -->
+    {% if user.is_authenticated %}
+    <a href="{% url 'dashboard_home' %}" class="btn-magnetic ml-auto px-5 py-2 bg-accent text-obsidian text-sm font-semibold rounded-full">
+        <span class="btn-bg bg-ivory"></span>
+        <span class="btn-label">Dashboard</span>
+    </a>
+    {% else %}
+    <a href="{% url 'auth_login' %}" class="btn-magnetic ml-auto px-5 py-2 bg-accent text-obsidian text-sm font-semibold rounded-full">
+        <span class="btn-bg bg-ivory"></span>
+        <span class="btn-label">Get Started</span>
+    </a>
+    {% endif %}
+
+    <!-- Mobile Menu -->
+    <button id="mobile-menu-btn" class="md:hidden ml-auto p-2 text-ivory/60 hover:text-accent transition-colors" aria-label="Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+</nav>
+
+<!-- Mobile dropdown -->
+<div id="mobile-menu" class="fixed top-20 left-4 right-4 z-[999] bg-slate/95 backdrop-blur-xl rounded-4xl border border-accent/10 p-6 hidden md:hidden">
+    <div class="flex flex-col gap-4 text-sm">
+        <a href="#features" class="text-ivory/70 hover:text-accent transition-colors">Features</a>
+        <a href="#philosophy" class="text-ivory/70 hover:text-accent transition-colors">Philosophy</a>
+        <a href="#protocol" class="text-ivory/70 hover:text-accent transition-colors">Protocol</a>
+        <hr class="border-ivory/10">
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard_home' %}" class="text-accent font-semibold">Open Dashboard</a>
+        {% else %}
+        <a href="{% url 'auth_login' %}" class="text-accent font-semibold">Sign In</a>
+        <a href="{% url 'auth_register' %}" class="text-ivory/50">Create Account</a>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     B. HERO SECTION — The Opening Shot
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="hero" class="relative w-full h-[100dvh] flex items-end overflow-hidden">
+    <!-- Background Image -->
+    <div class="absolute inset-0">
+        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80"
+             alt="" class="w-full h-full object-cover" loading="eager">
+        <!-- Gradient overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/80 to-obsidian/30"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-obsidian/60 to-transparent"></div>
+    </div>
+
+    <!-- Content — bottom-left -->
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 pb-20 md:pb-28">
+        <div class="max-w-3xl">
+            <!-- Status pill -->
+            <div class="hero-el inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 border border-accent/20 rounded-full mb-8">
+                <span class="pulse-dot"></span>
+                <span class="text-[10px] font-mono font-medium text-accent uppercase tracking-wide-mono">System Operational</span>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="hero-el mb-6">
+                <span class="hero-heading block text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-brutal text-ivory leading-[1.08]">
+                    Intelligence meets
+                </span>
+                <span class="hero-serif block text-5xl sm:text-7xl md:text-[6.5rem] font-display italic text-accent leading-[1.0] mt-1">
+                    Precision.
+                </span>
+            </h1>
+
+            <!-- Sub-line -->
+            <p class="hero-el text-base sm:text-lg text-ivory/50 max-w-xl leading-relaxed mb-10 font-light">
+                Upload your e-commerce data. Get real-time analytics, predictive forecasting, 
+                and automated compliance — all from one obsidian-grade dashboard.
+            </p>
+
+            <!-- CTA Row -->
+            <div class="hero-el flex flex-wrap gap-4">
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard_home' %}" class="btn-magnetic px-8 py-4 bg-accent text-obsidian text-sm font-bold rounded-full shadow-lg shadow-accent/20">
+                    <span class="btn-bg bg-ivory"></span>
+                    <span class="btn-label">Open Dashboard</span>
+                </a>
+                <a href="{% url 'control_center' %}" class="btn-magnetic px-8 py-4 bg-transparent text-ivory text-sm font-semibold rounded-full border border-ivory/20 hover:border-accent/40">
+                    <span class="btn-bg bg-accent/10"></span>
+                    <span class="btn-label">Upload Data</span>
+                </a>
+                {% else %}
+                <a href="{% url 'auth_register' %}" class="btn-magnetic px-8 py-4 bg-accent text-obsidian text-sm font-bold rounded-full shadow-lg shadow-accent/20">
+                    <span class="btn-bg bg-ivory"></span>
+                    <span class="btn-label">Get Started</span>
+                </a>
+                <a href="{% url 'auth_login' %}" class="btn-magnetic px-8 py-4 bg-transparent text-ivory text-sm font-semibold rounded-full border border-ivory/20 hover:border-accent/40">
+                    <span class="btn-bg bg-accent/10"></span>
+                    <span class="btn-label">Sign In</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="hero-el absolute bottom-8 right-10 hidden md:flex flex-col items-center gap-2">
+            <span class="text-[9px] font-mono text-ivory/30 tracking-wide-mono uppercase">Scroll</span>
+            <div class="w-px h-12 bg-gradient-to-b from-accent/40 to-transparent"></div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     C. FEATURES — Interactive Functional Artifacts
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="features" class="relative py-28 md:py-40 bg-ivory">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10">
+
+        <!-- Section label -->
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-8 h-px bg-accent"></div>
+            <span class="text-[10px] font-mono uppercase tracking-wide-mono text-slate/50">Core Capabilities</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-brutal text-obsidian mb-20 max-w-2xl leading-tight">
+            Three pillars.<br>
+            <span class="font-display italic text-accent">Zero compromise.</span>
+        </h2>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <!-- ── Card 1: Diagnostic Shuffler — Real-Time Data Processing ── -->
+            <div class="feature-card card-surface p-8 flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-obsidian rounded-xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate/40 uppercase tracking-wide-mono">01</span>
+                </div>
+                <h3 class="text-lg font-bold text-obsidian mb-2 tracking-tight">Real-Time Data Processing</h3>
+                <p class="text-sm text-slate/60 leading-relaxed mb-6">Ingest, transform, and load millions of records through an intelligent ETL pipeline that adapts to your schema automatically.</p>
+
+                <!-- Shuffler interaction -->
+                <div class="shuffler-stack mt-auto" id="shuffler">
+                    <div class="shuffler-card bg-obsidian text-ivory" style="z-index:3; transform: translateY(0px) scale(1);">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-accent">Schema Detection</span>
+                            <span class="text-[10px] font-mono text-ivory/30">Active</span>
+                        </div>
+                        <p class="text-[11px] text-ivory/50 mt-1">Auto-mapping 24 column aliases</p>
+                    </div>
+                    <div class="shuffler-card bg-slate text-ivory" style="z-index:2; transform: translateY(12px) scale(0.96);">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-accent">Data Cleaning</span>
+                            <span class="text-[10px] font-mono text-ivory/30">Queued</span>
+                        </div>
+                        <p class="text-[11px] text-ivory/50 mt-1">Normalizing dates & currencies</p>
+                    </div>
+                    <div class="shuffler-card bg-slate/80 text-ivory" style="z-index:1; transform: translateY(24px) scale(0.92);">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono text-accent">Load & Index</span>
+                            <span class="text-[10px] font-mono text-ivory/30">Pending</span>
+                        </div>
+                        <p class="text-[11px] text-ivory/50 mt-1">Star-schema dimensional insert</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Card 2: Telemetry Typewriter — Predictive Forecasting ── -->
+            <div class="feature-card card-surface p-8 flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-obsidian rounded-xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate/40 uppercase tracking-wide-mono">02</span>
+                </div>
+                <h3 class="text-lg font-bold text-obsidian mb-2 tracking-tight">Predictive Forecasting</h3>
+                <p class="text-sm text-slate/60 leading-relaxed mb-6">Holt-Winters exponential smoothing projects 90-day revenue trajectories with statistical confidence bands.</p>
+
+                <!-- Typewriter interaction -->
+                <div class="mt-auto bg-obsidian rounded-2xl p-5 font-mono text-xs">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="pulse-dot"></span>
+                        <span class="text-[9px] text-accent uppercase tracking-wide-mono">Live Feed</span>
+                    </div>
+                    <div id="typewriter-output" class="text-ivory/70 leading-relaxed h-[72px] overflow-hidden">
+                        <span id="typewriter-text"></span><span class="cursor-blink text-accent">▌</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Card 3: Status Card — Automated Compliance Reporting ── -->
+            <div class="feature-card card-surface p-8 flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-obsidian rounded-xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate/40 uppercase tracking-wide-mono">03</span>
+                </div>
+                <h3 class="text-lg font-bold text-obsidian mb-2 tracking-tight">Automated Compliance</h3>
+                <p class="text-sm text-slate/60 leading-relaxed mb-6">Full audit trail, anomaly flagging, and scheduled report generation — compliance on autopilot.</p>
+
+                <!-- Scheduler-style status -->
+                <div class="mt-auto space-y-3" id="scheduler-widget">
+                    <div class="flex items-center justify-between bg-obsidian/5 rounded-xl px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span class="text-[11px] font-mono text-obsidian/70">Audit Export</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate/40">00:00 daily</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-obsidian/5 rounded-xl px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-accent"></div>
+                            <span class="text-[11px] font-mono text-obsidian/70">Flag Anomalies</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate/40">every 10m</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-obsidian/5 rounded-xl px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span class="text-[11px] font-mono text-obsidian/70">Cleanup Stale</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate/40">02:00 daily</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     D. PHILOSOPHY — The Manifesto
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="philosophy" class="relative py-32 md:py-48 bg-obsidian overflow-hidden">
+    <!-- Background texture -->
+    <div class="absolute inset-0 opacity-[0.06]">
+        <img src="https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=60"
+             alt="" class="w-full h-full object-cover" loading="lazy">
+    </div>
+
+    <div class="relative z-10 max-w-5xl mx-auto px-6 sm:px-10">
+        <!-- Conventional statement -->
+        <div class="philosophy-line mb-12">
+            <p class="text-lg sm:text-xl md:text-2xl text-ivory/30 font-light leading-relaxed">
+                Most analytics platforms focus on:
+                <span class="text-ivory/50">dashboards full of charts nobody reads, data pipelines that break at scale, and reports that arrive too late to matter.</span>
+            </p>
+        </div>
+
+        <!-- Differentiator — massive -->
+        <div class="philosophy-line">
+            <p class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-brutal text-ivory leading-[1.12]">
+                We focus on:
+            </p>
+            <p class="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display italic text-accent leading-[1.08] mt-4">
+                Actionable intelligence<br>
+                <span class="text-ivory/80">delivered in real-time.</span>
+            </p>
+        </div>
+
+        <!-- Accent bar -->
+        <div class="philosophy-line mt-16 flex items-center gap-4">
+            <div class="w-16 h-px bg-accent/40"></div>
+            <span class="text-[10px] font-mono text-ivory/25 uppercase tracking-wide-mono">Since 2024</span>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     E. PROTOCOL — Sticky Stacking Archive
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section id="protocol" class="relative bg-ivory">
+    <!-- Section header -->
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 pt-28 pb-16">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-8 h-px bg-accent"></div>
+            <span class="text-[10px] font-mono uppercase tracking-wide-mono text-slate/50">The Protocol</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-brutal text-obsidian max-w-2xl leading-tight">
+            From raw data to<br>
+            <span class="font-display italic text-accent">strategic clarity.</span>
+        </h2>
+    </div>
+
+    <!-- Stacking Cards -->
+    <div id="stacking-container">
+
+        <!-- Card 1 — Ingest -->
+        <div class="stack-card px-6 sm:px-10" data-stack="0">
+            <div class="w-full max-w-5xl mx-auto bg-obsidian rounded-5xl p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 md:gap-16 min-h-[70vh]">
+                <!-- Left: Canvas animation — rotating motif -->
+                <div class="w-full md:w-1/2 flex items-center justify-center">
+                    <div class="relative w-48 h-48 md:w-64 md:h-64">
+                        <svg class="rotate-slow w-full h-full" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="100" cy="100" r="90" stroke="#E63B2E" stroke-width="0.5" opacity="0.3"/>
+                            <circle cx="100" cy="100" r="70" stroke="#E63B2E" stroke-width="0.5" opacity="0.2"/>
+                            <circle cx="100" cy="100" r="50" stroke="#E63B2E" stroke-width="0.5" opacity="0.15"/>
+                            <circle cx="100" cy="100" r="30" stroke="#E63B2E" stroke-width="1" opacity="0.4"/>
+                            <circle cx="100" cy="10" r="3" fill="#E63B2E" opacity="0.8"/>
+                            <circle cx="190" cy="100" r="3" fill="#E63B2E" opacity="0.8"/>
+                            <circle cx="100" cy="190" r="3" fill="#E63B2E" opacity="0.8"/>
+                            <circle cx="10" cy="100" r="3" fill="#E63B2E" opacity="0.8"/>
+                            <line x1="10" y1="100" x2="190" y2="100" stroke="#E63B2E" stroke-width="0.3" opacity="0.2"/>
+                            <line x1="100" y1="10" x2="100" y2="190" stroke="#E63B2E" stroke-width="0.3" opacity="0.2"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-accent font-mono text-[10px] tracking-wide-mono uppercase opacity-60">Ingest</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right: Content -->
+                <div class="w-full md:w-1/2">
+                    <span class="text-accent font-mono text-xs tracking-wide-mono">STEP 01</span>
+                    <h3 class="text-3xl md:text-4xl font-extrabold text-ivory tracking-brutal mt-3 mb-4">Data Ingestion</h3>
+                    <p class="text-ivory/40 text-base leading-relaxed">Upload CSV or Excel. Our intelligent schema mapper detects column types, resolves aliases, and normalizes your dataset — no configuration required.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2 — Analyze -->
+        <div class="stack-card px-6 sm:px-10" data-stack="1">
+            <div class="w-full max-w-5xl mx-auto bg-slate rounded-5xl p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 md:gap-16 min-h-[70vh]">
+                <!-- Left: Scanning grid -->
+                <div class="w-full md:w-1/2 flex items-center justify-center">
+                    <div class="relative w-48 h-48 md:w-64 md:h-64 overflow-hidden rounded-2xl border border-accent/10">
+                        <!-- Dot grid -->
+                        <svg class="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="20" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="40" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="60" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="80" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="100" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="120" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="140" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="160" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="20" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="40" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="60" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="80" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="100" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="120" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="140" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="160" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                            <circle cx="180" cy="180" r="1.5" fill="#E63B2E" opacity="0.15"/>
+                        </svg>
+                        <!-- Laser scan line -->
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                <!-- Right: Content -->
+                <div class="w-full md:w-1/2">
+                    <span class="text-accent font-mono text-xs tracking-wide-mono">STEP 02</span>
+                    <h3 class="text-3xl md:text-4xl font-extrabold text-ivory tracking-brutal mt-3 mb-4">Deep Analysis</h3>
+                    <p class="text-ivory/40 text-base leading-relaxed">Revenue trends, customer segmentation, product performance, and regional breakdowns — rendered as interactive Plotly visualizations in real-time.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3 — Forecast -->
+        <div class="stack-card px-6 sm:px-10" data-stack="2">
+            <div class="w-full max-w-5xl mx-auto bg-obsidian rounded-5xl p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 md:gap-16 min-h-[70vh]">
+                <!-- Left: Waveform -->
+                <div class="w-full md:w-1/2 flex items-center justify-center">
+                    <svg class="w-64 h-48" viewBox="0 0 300 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path class="waveform-path" d="M0,75 Q25,20 50,75 T100,75 T150,75 T200,75 T250,75 T300,75" stroke="#E63B2E" stroke-width="2" fill="none"/>
+                        <path d="M0,75 Q25,50 50,75 T100,75 T150,75 T200,75 T250,75 T300,75" stroke="#E63B2E" stroke-width="0.5" fill="none" opacity="0.2"/>
+                        <path d="M0,65 Q25,10 50,65 T100,65 T150,65 T200,65 T250,65 T300,65" stroke="#E63B2E" stroke-width="0.3" fill="none" opacity="0.15" stroke-dasharray="4 4"/>
+                        <path d="M0,85 Q25,90 50,85 T100,85 T150,85 T200,85 T250,85 T300,85" stroke="#E63B2E" stroke-width="0.3" fill="none" opacity="0.15" stroke-dasharray="4 4"/>
+                        <circle cx="250" cy="75" r="4" fill="#E63B2E" opacity="0.8"/>
+                        <circle cx="250" cy="75" r="8" fill="none" stroke="#E63B2E" stroke-width="0.5" opacity="0.3"/>
+                    </svg>
+                </div>
+                <!-- Right: Content -->
+                <div class="w-full md:w-1/2">
+                    <span class="text-accent font-mono text-xs tracking-wide-mono">STEP 03</span>
+                    <h3 class="text-3xl md:text-4xl font-extrabold text-ivory tracking-brutal mt-3 mb-4">Forecast & Act</h3>
+                    <p class="text-ivory/40 text-base leading-relaxed">Holt-Winters exponential smoothing projects 90-day revenue with confidence intervals. Automated reports and cron-driven compliance keep you ahead.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     G. FOOTER
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<footer class="relative bg-obsidian rounded-t-[4rem] mt-0">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 py-20">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <!-- Brand -->
+            <div class="md:col-span-1">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
+                        <span class="text-obsidian text-sm font-bold font-mono">N</span>
+                    </span>
+                    <span class="text-ivory font-bold text-lg tracking-tight">Nile Analytics</span>
+                </div>
+                <p class="text-ivory/30 text-sm leading-relaxed">E-commerce intelligence platform. From raw data to strategic clarity.</p>
+            </div>
+
+            <!-- Nav: Platform -->
+            <div>
+                <h4 class="text-[10px] font-mono uppercase tracking-wide-mono text-ivory/30 mb-4">Platform</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="{% url 'dashboard_home' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Dashboard</a></li>
+                    <li><a href="{% url 'control_center' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Upload Data</a></li>
+                    <li><a href="#features" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Features</a></li>
+                </ul>
+            </div>
+
+            <!-- Nav: Analytics -->
+            <div>
+                <h4 class="text-[10px] font-mono uppercase tracking-wide-mono text-ivory/30 mb-4">Analytics</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="{% url 'graphs' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Graphs</a></li>
+                    <li><a href="{% url 'forecasting_page' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Forecasting</a></li>
+                    <li><a href="{% url 'audit_log' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Audit Log</a></li>
+                </ul>
+            </div>
+
+            <!-- Nav: Company -->
+            <div>
+                <h4 class="text-[10px] font-mono uppercase tracking-wide-mono text-ivory/30 mb-4">Company</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="{% url 'about' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">About</a></li>
+                    {% if not user.is_authenticated %}
+                    <li><a href="{% url 'auth_login' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Sign In</a></li>
+                    <li><a href="{% url 'auth_register' %}" class="text-ivory/50 hover:text-accent transition-colors lift inline-block">Create Account</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Bottom bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-ivory/5">
+            <!-- System status -->
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-[10px] font-mono text-ivory/25 uppercase tracking-wide-mono">System Operational</span>
+            </div>
+            <!-- Legal -->
+            <div class="flex items-center gap-6 text-[11px] font-mono text-ivory/20">
+                <span>&copy; 2026 Nile Analytics</span>
+                <span class="hidden sm:inline">All systems nominal</span>
+            </div>
+        </div>
+    </div>
+</footer>
+</div><!-- end loco-wrapper -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCRIPTS — GSAP Animations & Interactions
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ──────────────────────────────────────────────
+    // LOCOMOTIVE SCROLL INIT
+    // ──────────────────────────────────────────────
+    const locoScroll = new LocomotiveScroll({
+        el: document.querySelector('#loco-wrapper'),
+        smooth: true,
+        lerp: 0.06,
+        multiplier: 1.0,
+        smartphone: { smooth: true },
+        tablet: { smooth: true },
+    });
+
+    // Proxy Locomotive → GSAP ScrollTrigger
+    locoScroll.on('scroll', ScrollTrigger.update);
+    ScrollTrigger.scrollerProxy('#loco-wrapper', {
+        scrollTop(value) {
+            return arguments.length
+                ? locoScroll.scrollTo(value, { duration: 0, disableLerp: true })
+                : locoScroll.scroll.instance.scroll.y;
+        },
+        getBoundingClientRect() {
+            return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+        },
+        pinType: document.querySelector('#loco-wrapper').style.transform ? 'transform' : 'fixed',
+    });
+    ScrollTrigger.addEventListener('refresh', () => locoScroll.update());
+    ScrollTrigger.defaults({ scroller: '#loco-wrapper' });
+
+    const ctx = gsap.context(() => {
+
+        // ──────────────────────────────────────────────
+        // NAVBAR MORPH
+        // ──────────────────────────────────────────────
+        const navbar = document.getElementById('navbar');
+        ScrollTrigger.create({
+            trigger: '#hero',
+            start: 'bottom top+=100',
+            onEnter: () => navbar.classList.add('scrolled'),
+            onLeaveBack: () => navbar.classList.remove('scrolled'),
+        });
+
+        // ──────────────────────────────────────────────
+        // HERO STAGGER ENTRANCE
+        // ──────────────────────────────────────────────
+        gsap.from('.hero-el', {
+            y: 40,
+            opacity: 0,
+            duration: 1.2,
+            ease: 'power3.out',
+            stagger: 0.08,
+            delay: 0.3,
+        });
+
+        // ──────────────────────────────────────────────
+        // FEATURE CARDS ENTRANCE
+        // ──────────────────────────────────────────────
+        gsap.from('.feature-card', {
+            scrollTrigger: {
+                trigger: '#features',
+                start: 'top 75%',
+            },
+            y: 60,
+            opacity: 0,
+            duration: 1,
+            ease: 'power3.out',
+            stagger: 0.15,
+        });
+
+        // ──────────────────────────────────────────────
+        // PHILOSOPHY LINES — fade-up reveal
+        // ──────────────────────────────────────────────
+        document.querySelectorAll('.philosophy-line').forEach((line) => {
+            gsap.from(line, {
+                scrollTrigger: {
+                    trigger: line,
+                    start: 'top 80%',
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1.2,
+                ease: 'power3.out',
+            });
+        });
+
+        // ──────────────────────────────────────────────
+        // STACKING CARDS — Pin & Scale
+        // ──────────────────────────────────────────────
+        const stackCards = document.querySelectorAll('.stack-card');
+        stackCards.forEach((card, i) => {
+            if (i < stackCards.length - 1) {
+                ScrollTrigger.create({
+                    trigger: card,
+                    start: 'top top',
+                    endTrigger: stackCards[i + 1],
+                    end: 'top top',
+                    pin: true,
+                    pinSpacing: false,
+                    onUpdate: (self) => {
+                        const progress = self.progress;
+                        gsap.set(card.querySelector('div'), {
+                            scale: 1 - (progress * 0.1),
+                            filter: `blur(${progress * 20}px)`,
+                            opacity: 1 - (progress * 0.5),
+                        });
+                    },
+                });
+            }
+        });
+
+    }); // end gsap.context
+
+    // Refresh after all content loaded
+    ScrollTrigger.refresh();
+    setTimeout(() => { locoScroll.update(); ScrollTrigger.refresh(); }, 500);
+
+    // ──────────────────────────────────────────────
+    // DIAGNOSTIC SHUFFLER
+    // ──────────────────────────────────────────────
+    const shufflerCards = document.querySelectorAll('#shuffler .shuffler-card');
+    if (shufflerCards.length) {
+        const cards = Array.from(shufflerCards);
+        let currentOrder = [0, 1, 2];
+
+        setInterval(() => {
+            currentOrder.unshift(currentOrder.pop());
+            currentOrder.forEach((cardIdx, position) => {
+                const card = cards[cardIdx];
+                card.style.zIndex = 3 - position;
+                card.style.transform = `translateY(${position * 12}px) scale(${1 - position * 0.04})`;
+                card.style.opacity = 1 - position * 0.15;
+            });
+        }, 3000);
+    }
+
+    // ──────────────────────────────────────────────
+    // TELEMETRY TYPEWRITER
+    // ──────────────────────────────────────────────
+    const typewriterEl = document.getElementById('typewriter-text');
+    if (typewriterEl) {
+        const messages = [
+            '> Holt-Winters model initialized...',
+            '> Fitting seasonal decomposition (α=0.8, β=0.2)',
+            '> Forecast horizon: 90 days, CI: 95%',
+            '> Revenue trend: +12.3% MoM detected',
+            '> Confidence band width: ±$14,200',
+            '> Anomaly detected: Region_SW spike +340%',
+            '> Auto-exporting compliance report...',
+            '> 24 column aliases resolved in 0.03s',
+        ];
+        let msgIdx = 0;
+        let charIdx = 0;
+        let currentText = '';
+
+        function typeNext() {
+            if (charIdx < messages[msgIdx].length) {
+                currentText += messages[msgIdx][charIdx];
+                typewriterEl.textContent = currentText;
+                charIdx++;
+                setTimeout(typeNext, 25 + Math.random() * 35);
+            } else {
+                setTimeout(() => {
+                    currentText += '\n';
+                    msgIdx = (msgIdx + 1) % messages.length;
+                    charIdx = 0;
+                    const lines = currentText.split('\n');
+                    if (lines.length > 3) {
+                        currentText = lines.slice(-3).join('\n');
+                    }
+                    typeNext();
+                }, 1500);
+            }
+        }
+        typeNext();
+    }
+
+    // ──────────────────────────────────────────────
+    // MOBILE MENU TOGGLE
+    // ──────────────────────────────────────────────
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+    }
+
+    // SMOOTH SCROLL for anchor links (via Locomotive)
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            const target = document.querySelector(href);
+            if (target) {
+                e.preventDefault();
+                locoScroll.scrollTo(target);
+            }
+        });
+    });
+
+});
+</script>
+
+</body>
+</html>

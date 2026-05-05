@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .sim-card {
+        opacity: 0; transform: translateY(24px);
+        transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sim-card.visible { opacity: 1; transform: translateY(0); }
+
+    .slider-track {
+        -webkit-appearance: none; appearance: none;
+        width: 100%; height: 6px; border-radius: 99px;
+        background: #E4E4E7; outline: none;
+        transition: background 0.2s;
+    }
+    .slider-track::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 20px; height: 20px; border-radius: 50%;
+        background: #E63B2E; cursor: pointer;
+        box-shadow: 0 2px 8px rgba(230,59,46,0.3);
+        transition: transform 0.15s ease;
+    }
+    .slider-track::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .slider-track::-moz-range-thumb {
+        width: 20px; height: 20px; border-radius: 50%;
+        background: #E63B2E; cursor: pointer; border: none;
+        box-shadow: 0 2px 8px rgba(230,59,46,0.3);
+    }
+    .slider-accent::-webkit-slider-thumb { background: #71717A; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .slider-accent::-moz-range-thumb { background: #71717A; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+    .metric-delta.positive { color: #16a34a; }
+    .metric-delta.negative { color: #E63B2E; }
+    .metric-delta.neutral { color: #71717A; }
+
+    .gauge-bar { transition: width 0.5s cubic-bezier(0.16,1,0.3,1); }
+    .cost-bar { transition: width 0.4s ease; }
+</style>
+
+<div class="max-w-7xl mx-auto py-10 px-2">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+                <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.3em]">Scenario Engine</span>
+            </div>
+            <h1 class="text-3xl font-heading font-extrabold text-brand-text tracking-tight">What-If Simulator</h1>
+            <p class="text-sm text-brand-muted mt-1">
+                {% if session %}Session: <span class="font-semibold text-brand-text">{{ session.name }}</span>{% else %}No active session{% endif %}
+            </p>
+        </div>
+        <button onclick="resetSliders()" class="px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-zinc-100 hover:bg-zinc-200 text-brand-muted transition-colors">
+            Reset All
+        </button>
+    </div>
+
+    {% if baselines_obj %}
+    <div class="grid lg:grid-cols-5 gap-8">
+        <!-- Controls Panel (2 cols) -->
+        <div class="lg:col-span-2 space-y-5">
+            <!-- Price Slider -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1" /></svg>
+                        </div>
+                        <span class="text-sm font-heading font-bold text-brand-text">Price Change</span>
+                    </div>
+                    <span id="price-val" class="text-sm font-mono font-bold text-brand-red">0%</span>
+                </div>
+                <input type="range" id="price-slider" class="slider-track" min="-50" max="50" value="0" step="1">
+                <div class="flex justify-between text-[10px] font-mono text-brand-muted mt-2">
+                    <span>-50%</span><span>0%</span><span>+50%</span>
+                </div>
+                <p class="text-[10px] text-brand-muted mt-2">↑ Price → ↑ Revenue/unit but ↓ Demand (elasticity)</p>
+            </div>
+
+            <!-- Discount Slider -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
+                        </div>
+                        <span class="text-sm font-heading font-bold text-brand-text">Discount Change</span>
+                    </div>
+                    <span id="discount-val" class="text-sm font-mono font-bold text-brand-red">0%</span>
+                </div>
+                <input type="range" id="discount-slider" class="slider-track" min="-50" max="50" value="0" step="1">
+                <div class="flex justify-between text-[10px] font-mono text-brand-muted mt-2">
+                    <span>-50%</span><span>0%</span><span>+50%</span>
+                </div>
+                <p class="text-[10px] text-brand-muted mt-2">↑ Discount → ↓ Effective price but ↑ Demand (+0.5x elasticity)</p>
+            </div>
+
+            <!-- Volume Slider -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </div>
+                        <span class="text-sm font-heading font-bold text-brand-text">Volume Change</span>
+                    </div>
+                    <span id="volume-val" class="text-sm font-mono font-bold text-brand-red">0%</span>
+                </div>
+                <input type="range" id="volume-slider" class="slider-track" min="-50" max="50" value="0" step="1">
+                <div class="flex justify-between text-[10px] font-mono text-brand-muted mt-2">
+                    <span>-50%</span><span>0%</span><span>+50%</span>
+                </div>
+                <p class="text-[10px] text-brand-muted mt-2">Manual demand override — stacks with elasticity effects</p>
+            </div>
+
+            <!-- Elasticity Slider -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                        </div>
+                        <span class="text-sm font-heading font-bold text-brand-text">Price Elasticity</span>
+                    </div>
+                    <span id="elasticity-val" class="text-sm font-mono font-bold text-purple-600">-1.5</span>
+                </div>
+                <input type="range" id="elasticity-slider" class="slider-track slider-accent" min="-30" max="-5" value="-15" step="1">
+                <div class="flex justify-between text-[10px] font-mono text-brand-muted mt-2">
+                    <span>-3.0 (elastic)</span><span>-1.5</span><span>-0.5 (inelastic)</span>
+                </div>
+                <p class="text-[10px] text-brand-muted mt-2">How sensitive demand is to price: -3 = luxury, -0.5 = essentials</p>
+            </div>
+
+            <!-- Model Info -->
+            <div class="sim-card bg-zinc-50 rounded-xl border border-zinc-200/40 px-5 py-4">
+                <div class="flex gap-2 items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-muted shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div class="text-[11px] text-brand-muted leading-relaxed space-y-1">
+                        <p><strong>Cost model:</strong> COGS ($<span id="info-vcpu">0</span>/unit) + shipping derived from your actual data.</p>
+                        <p><strong>Demand:</strong> Price × elasticity + discount boost (0.5x) + manual volume.</p>
+                        <p><strong>Profit</strong> = Revenue − Variable Costs − Shipping (not a margin guess).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel (3 cols) -->
+        <div class="lg:col-span-3 space-y-5">
+            <!-- Baseline vs Projected -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Baseline -->
+                <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                    <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-4">Current Baseline</div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Revenue</div>
+                            <div class="text-xl font-heading font-extrabold text-brand-text" id="base-revenue">$0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Profit</div>
+                            <div class="text-xl font-heading font-extrabold text-brand-text" id="base-profit">$0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Units Sold</div>
+                            <div class="text-xl font-heading font-extrabold text-brand-text" id="base-units">0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Margin</div>
+                            <div class="text-xl font-heading font-extrabold text-brand-text" id="base-margin">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projected -->
+                <div class="sim-card bg-gradient-to-br from-white to-red-50/30 rounded-2xl border border-red-200/40 shadow-sm p-6">
+                    <div class="text-[10px] font-mono text-brand-red uppercase tracking-wider mb-4">Projected</div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Revenue</div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xl font-heading font-extrabold text-brand-text" id="proj-revenue">$0</span>
+                                <span class="text-xs font-mono metric-delta neutral" id="proj-revenue-delta">0%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Profit</div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xl font-heading font-extrabold text-brand-text" id="proj-profit">$0</span>
+                                <span class="text-xs font-mono metric-delta neutral" id="proj-profit-delta">0%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Units Sold</div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xl font-heading font-extrabold text-brand-text" id="proj-units">0</span>
+                                <span class="text-xs font-mono metric-delta neutral" id="proj-volume-delta">0%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-mono text-brand-muted">Margin</div>
+                            <div class="text-xl font-heading font-extrabold text-brand-text" id="proj-margin">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-4">Cost Breakdown</div>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <div class="text-[10px] font-mono text-brand-muted">Variable Costs</div>
+                        <div class="text-lg font-heading font-bold text-brand-text" id="proj-variable-cost">$0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-mono text-brand-muted">Shipping</div>
+                        <div class="text-lg font-heading font-bold text-brand-text" id="proj-shipping">$0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-mono text-brand-muted">Eff. Price</div>
+                        <div class="text-lg font-heading font-bold text-brand-text" id="proj-eff-price">$0</div>
+                    </div>
+                </div>
+                <!-- Stacked cost bar -->
+                <div class="h-5 bg-zinc-100 rounded-full overflow-hidden flex">
+                    <div id="bar-cogs" class="cost-bar h-full bg-zinc-400" style="width:40%;" title="COGS"></div>
+                    <div id="bar-shipping" class="cost-bar h-full bg-amber-400" style="width:10%;" title="Shipping"></div>
+                    <div id="bar-profit" class="cost-bar h-full bg-green-500" style="width:50%;" title="Profit"></div>
+                </div>
+                <div class="flex gap-4 mt-2 text-[10px] font-mono text-brand-muted">
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-zinc-400"></span>COGS</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Shipping</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>Profit</span>
+                </div>
+            </div>
+
+            <!-- Revenue Gauge -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm p-6">
+                <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-3">Revenue Impact</div>
+                <div class="h-4 bg-zinc-100 rounded-full overflow-hidden">
+                    <div id="revenue-gauge" class="gauge-bar h-full rounded-full bg-gradient-to-r from-brand-red to-red-400" style="width: 50%;"></div>
+                </div>
+                <div class="flex justify-between text-[10px] font-mono text-brand-muted mt-2">
+                    <span>-50%</span><span id="gauge-label" class="font-semibold text-brand-text">0%</span><span>+100%</span>
+                </div>
+            </div>
+
+            <!-- Plotly Comparison Chart -->
+            <div class="sim-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-zinc-100 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-heading font-bold text-brand-text">Baseline vs Projected</h2>
+                        <p class="text-[11px] font-mono text-brand-muted">Revenue, profit, and cost comparison</p>
+                    </div>
+                </div>
+                <div id="comparison-chart" class="p-4" style="height: 340px;"></div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+        </div>
+        <p class="text-brand-muted text-sm">No session data available for simulation.</p>
+        <a href="{% url 'control_center' %}" class="mt-3 text-xs text-brand-red hover:underline">Upload data →</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if baselines_obj %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const baselines = {{ baselines|safe }};
+    const csrfToken = '{{ csrf_token }}';
+    const simulateUrl = '{% url "whatif_simulate" %}';
+
+    const fmt = (v) => '$' + Math.round(v).toLocaleString();
+    const fmtNum = (v) => Math.round(v).toLocaleString();
+
+    // Show cost-per-unit in info box
+    document.getElementById('info-vcpu').textContent = baselines.variable_cost_per_unit.toFixed(2);
+
+    // Set baseline values
+    document.getElementById('base-revenue').textContent = fmt(baselines.total_revenue);
+    document.getElementById('base-profit').textContent = fmt(baselines.total_profit);
+    document.getElementById('base-units').textContent = fmtNum(baselines.total_units);
+    document.getElementById('base-margin').textContent = baselines.profit_margin.toFixed(1) + '%';
+
+    // Initial projected = baseline
+    updateProjected({
+        revenue: baselines.total_revenue, profit: baselines.total_profit,
+        units: baselines.total_units, margin: baselines.profit_margin,
+        revenue_change: 0, profit_change: 0, volume_change: 0,
+        variable_cost: baselines.cogs, shipping_cost: baselines.total_shipping,
+        effective_price: baselines.avg_unit_price,
+    });
+    renderChart(baselines.total_revenue, baselines.total_profit, baselines.total_cost,
+                baselines.total_revenue, baselines.total_profit, baselines.total_cost);
+
+    let debounceTimer;
+
+    // All 4 sliders
+    ['price', 'discount', 'volume'].forEach(name => {
+        const slider = document.getElementById(name + '-slider');
+        const valEl = document.getElementById(name + '-val');
+        slider.addEventListener('input', () => {
+            const v = parseInt(slider.value);
+            valEl.textContent = (v >= 0 ? '+' : '') + v + '%';
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(runSimulation, 150);
+        });
+    });
+
+    // Elasticity slider (special: value / 10)
+    const elSlider = document.getElementById('elasticity-slider');
+    const elVal = document.getElementById('elasticity-val');
+    elSlider.addEventListener('input', () => {
+        const v = parseInt(elSlider.value) / 10;
+        elVal.textContent = v.toFixed(1);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSimulation, 150);
+    });
+
+    function runSimulation() {
+        const data = {
+            price_change: parseInt(document.getElementById('price-slider').value),
+            discount_change: parseInt(document.getElementById('discount-slider').value),
+            volume_change: parseInt(document.getElementById('volume-slider').value),
+            elasticity: parseInt(document.getElementById('elasticity-slider').value) / 10,
+        };
+
+        fetch(simulateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(data),
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.result) {
+                const r = resp.result;
+                updateProjected(r);
+                renderChart(
+                    baselines.total_revenue, baselines.total_profit, baselines.total_cost,
+                    r.revenue, r.profit, r.total_cost
+                );
+            }
+        })
+        .catch(() => {});
+    }
+
+    function updateProjected(r) {
+        document.getElementById('proj-revenue').textContent = fmt(r.revenue);
+        document.getElementById('proj-profit').textContent = fmt(r.profit);
+        document.getElementById('proj-units').textContent = fmtNum(r.units);
+        document.getElementById('proj-margin').textContent = r.margin.toFixed(1) + '%';
+
+        setDelta('proj-revenue-delta', r.revenue_change);
+        setDelta('proj-profit-delta', r.profit_change);
+        setDelta('proj-volume-delta', r.volume_change);
+
+        // Cost breakdown
+        document.getElementById('proj-variable-cost').textContent = fmt(r.variable_cost);
+        document.getElementById('proj-shipping').textContent = fmt(r.shipping_cost);
+        document.getElementById('proj-eff-price').textContent = '$' + (r.effective_price || 0).toFixed(2);
+
+        // Stacked cost bar (as % of revenue)
+        const rev = Math.max(1, r.revenue);
+        const cogsW = Math.min(100, Math.max(0, r.variable_cost / rev * 100));
+        const shipW = Math.min(100 - cogsW, Math.max(0, r.shipping_cost / rev * 100));
+        const profW = Math.max(0, 100 - cogsW - shipW);
+        document.getElementById('bar-cogs').style.width = cogsW + '%';
+        document.getElementById('bar-shipping').style.width = shipW + '%';
+        document.getElementById('bar-profit').style.width = profW + '%';
+
+        // Gauge
+        const gaugeVal = Math.min(100, Math.max(0, (r.revenue_change + 50) / 150 * 100));
+        document.getElementById('revenue-gauge').style.width = gaugeVal + '%';
+        document.getElementById('gauge-label').textContent = (r.revenue_change >= 0 ? '+' : '') + r.revenue_change.toFixed(1) + '%';
+    }
+
+    function setDelta(id, val) {
+        const el = document.getElementById(id);
+        el.textContent = (val >= 0 ? '+' : '') + val.toFixed(1) + '%';
+        el.className = 'text-xs font-mono metric-delta ' + (val > 0.5 ? 'positive' : val < -0.5 ? 'negative' : 'neutral');
+    }
+
+    function renderChart(baseRev, baseProf, baseCost, projRev, projProf, projCost) {
+        const _font = 'Inter, -apple-system, sans-serif';
+        const _red = '#E63B2E';
+        const _dark = '#18181B';
+        const _muted = '#71717A';
+        const _grid = 'rgba(228,228,231,0.5)';
+
+        const data = [
+            {
+                x: ['Revenue', 'Profit', 'Cost'],
+                y: [baseRev, baseProf, baseCost],
+                name: 'Baseline',
+                type: 'bar',
+                marker: { color: _dark, cornerradius: 5 },
+                hovertemplate: '<b>%{x} (Baseline)</b><br>$%{y:,.0f}<extra></extra>',
+            },
+            {
+                x: ['Revenue', 'Profit', 'Cost'],
+                y: [projRev, projProf, projCost],
+                name: 'Projected',
+                type: 'bar',
+                marker: { color: _red, cornerradius: 5 },
+                hovertemplate: '<b>%{x} (Projected)</b><br>$%{y:,.0f}<extra></extra>',
+            }
+        ];
+
+        const layout = {
+            barmode: 'group', dragmode: false,
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { family: _font, size: 12, color: _muted },
+            margin: { t: 10, b: 40, l: 65, r: 20 },
+            height: 320, showlegend: true,
+            legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center', font: { size: 11 } },
+            yaxis: { tickprefix: '$', tickformat: ',', showgrid: true, gridcolor: _grid, griddash: 'dot', zeroline: false },
+            xaxis: { showgrid: false },
+        };
+
+        Plotly.react('comparison-chart', data, layout, { displayModeBar: false, responsive: true });
+    }
+
+    // Intersection observer for cards
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach((e, i) => {
+            if (e.isIntersecting) {
+                setTimeout(() => e.target.classList.add('visible'), i * 80);
+                obs.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.sim-card').forEach(el => obs.observe(el));
+});
+
+function resetSliders() {
+    ['price', 'discount', 'volume'].forEach(name => {
+        document.getElementById(name + '-slider').value = 0;
+        document.getElementById(name + '-val').textContent = '0%';
+    });
+    document.getElementById('elasticity-slider').value = -15;
+    document.getElementById('elasticity-val').textContent = '-1.5';
+    document.getElementById('price-slider').dispatchEvent(new Event('input'));
+}
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NILE // ANALYTICS_V2</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#FDFDFD',
+                            text: '#111111',
+                            red: '#E63B2E',
+                            muted: '#52525B',
+                            border: '#E4E4E7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ── Modern Dark Mode Variables ─────────────────────────── */
+        :root {
+            --bg: #FDFDFD;
+            --bg-card: #FFFFFF;
+            --text: #111111;
+            --text-muted: #52525B;
+            --border: #E4E4E7;
+            --border-light: rgba(228,228,231,0.6);
+            --surface: #FAFAFA;
+            --hover-bg: rgba(0,0,0,0.02);
+            --table-stripe: rgba(250,250,250,0.8);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-hover: 0 20px 25px -5px rgba(230,59,46,0.05), 0 10px 10px -5px rgba(230,59,46,0.03);
+        }
+        html.dark {
+            --bg: linear-gradient(135deg, #181924 0%, #10111A 100%);
+            --bg-card: rgba(28,30,38,0.82);
+            --text: #F4F4F5;
+            --text-muted: #B0B3C0;
+            --border: #23243A;
+            --border-light: rgba(80,80,120,0.4);
+            --surface: rgba(22,24,32,0.85);
+            --hover-bg: rgba(255,255,255,0.04);
+            --table-stripe: rgba(36,38,48,0.7);
+            --shadow-sm: 0 2px 16px 0 rgba(0,0,0,0.32), 0 1.5px 8px 0 rgba(230,59,46,0.08);
+            --shadow-hover: 0 8px 32px 0 rgba(230,59,46,0.18), 0 2px 12px 0 rgba(0,0,0,0.22);
+            --glass-blur: blur(12px);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background 0.3s cubic-bezier(0.4,0,0.2,1), color 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .font-heading { font-family: 'Outfit', sans-serif; }
+
+        /* Dark mode overrides for common elements */
+        html.dark .bg-white,
+        html.dark .bg-zinc-50,
+        html.dark .bg-zinc-50\/80,
+        html.dark .bg-zinc-50\/60 {
+            background: var(--bg-card) !important;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: var(--shadow-sm) !important;
+            border: 1.5px solid var(--border) !important;
+        }
+        html.dark .border-zinc-200\/60, html.dark .border-zinc-200\/40, html.dark .border-zinc-100 {
+            border-color: var(--border) !important;
+            box-shadow: none !important;
+        }
+        html.dark .text-brand-text { color: var(--text) !important; }
+        html.dark .text-brand-muted { color: var(--text-muted) !important; }
+        html.dark .divide-zinc-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+        html.dark .bg-zinc-100 { background-color: #23243A !important; }
+        html.dark .bg-red-50 { background-color: rgba(230,59,46,0.16) !important; }
+        html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.13) !important; }
+        html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.13) !important; }
+        html.dark .bg-green-50 { background-color: rgba(22,163,74,0.13) !important; }
+        html.dark .shadow-sm, html.dark .tactical-glow { box-shadow: var(--shadow-sm) !important; }
+        html.dark .shadow-hover, html.dark .tactical-glow:hover { box-shadow: var(--shadow-hover) !important; }
+        html.dark .border-b { border-color: var(--border) !important; }
+        html.dark .bg-gradient-to-br { background: linear-gradient(135deg, rgba(36,38,48,0.92) 0%, rgba(28,30,38,0.82) 100%) !important; background-image: none !important; }
+        html.dark .hover\:bg-zinc-50\/60:hover { background-color: var(--hover-bg) !important; }
+        html.dark .shadow-sm { box-shadow: var(--shadow-sm) !important; }
+        html.dark .border-b { border-color: var(--border) !important; }
+        html.dark .bg-gradient-to-br { background-image: none !important; background-color: var(--bg-card) !important; }
+
+        /* Dark mode toggle styling */
+        .dark-toggle { cursor: pointer; position: relative; width: 36px; height: 20px; border-radius: 99px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
+        .dark-toggle .toggle-dot { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #A1A1AA; transition: transform 0.3s, background 0.3s; }
+        html.dark .dark-toggle { background: rgba(230,59,46,0.3); }
+        html.dark .dark-toggle .toggle-dot { transform: translateX(16px); background: #E63B2E; }
+
+        .tactical-border { border: 1px solid var(--border); }
+        .tactical-glow { box-shadow: var(--shadow-sm); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        .tactical-glow:hover { 
+            box-shadow: var(--shadow-hover); 
+            border-color: #E63B2E;
+            transform: translateY(-4px);
+        }
+        .scanline { background: linear-gradient(to bottom, transparent 50%, rgba(17, 17, 17, 0.01) 50%); background-size: 100% 4px; pointer-events: none; }
+        
+        /* ── Sidebar ──────────────────────────────────────── */
+        .sidebar {
+            transition: width 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+            background: rgba(18,20,28,0.92);
+            backdrop-filter: blur(16px);
+            box-shadow: 8px 0 32px rgba(0,0,0,0.32);
+            border-right: 1.5px solid var(--border);
+        }
+        html.dark .sidebar {
+            background: linear-gradient(135deg, rgba(18,20,28,0.96) 0%, rgba(28,30,38,0.92) 100%);
+            box-shadow: 12px 0 48px rgba(0,0,0,0.45), 0 0 0 1.5px var(--border);
+            border-right: 1.5px solid var(--border);
+            backdrop-filter: blur(18px) saturate(1.2);
+        }
+        .sidebar .nav-label { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .sidebar.collapsed .nav-label { opacity: 0; transform: translateX(-10px); pointer-events: none; }
+        .sidebar.collapsed .sidebar-section-title { opacity: 0; height: 0; margin: 0; overflow: hidden; transition: all 0.2s ease; }
+        .sidebar.collapsed .user-info { opacity: 0; width: 0; overflow: hidden; }
+        .sidebar .tooltip-text { display: none; }
+        .sidebar.collapsed .nav-item:hover .tooltip-text {
+            display: block; position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
+            margin-left: 14px; padding: 6px 12px; background: #0D0D12; color: #FAF8F5; font-size: 12px;
+            border-radius: 10px; white-space: nowrap; z-index: 100;
+            border: 1px solid rgba(228,228,231,0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        /* Nav item styling */
+        .sidebar .nav-item {
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .sidebar .nav-item:hover {
+            transform: translateX(2px);
+        }
+        .sidebar .nav-item.active-item {
+            background: linear-gradient(90deg, rgba(230,59,46,0.18) 0%, rgba(230,59,46,0.10) 100%);
+            color: #E63B2E;
+            box-shadow: 0 2px 12px 0 rgba(230,59,46,0.10);
+            border: 1.5px solid rgba(230,59,46,0.18);
+        }
+        .sidebar .nav-item.active-item svg {
+            color: #E63B2E;
+            filter: drop-shadow(0 0 4px rgba(230,59,46,0.25));
+        }
+
+        /* Custom sidebar scrollbar */
+        .sidebar-nav::-webkit-scrollbar { width: 3px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+        .sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+
+        .main-content {
+            transition: margin-left 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        html.dark .main-content {
+            background: linear-gradient(135deg, #181924 0%, #10111A 100%);
+            min-height: 100vh;
+        }
+    </style>
+    <script>
+        // Apply dark mode before paint to avoid flash
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="min-h-screen font-sans antialiased text-brand-text">
+    <div class="fixed inset-0 scanline z-[1] opacity-20 pointer-events-none"></div>
+
+    {% if user.is_authenticated %}
+    <!-- ─── Sidebar ─────────────────────────────────────────────────────── -->
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 z-[50] flex flex-col" style="box-shadow: 4px 0 24px rgba(0,0,0,0.3);">
+        
+        <!-- Logo + Toggle -->
+        <div class="flex items-center justify-between px-5 py-5">
+            <a href="{% url 'homepage' %}" class="flex items-center space-x-3 group">
+                <span class="w-9 h-9 bg-brand-red rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-red-900/20">
+                    <span class="text-white text-sm font-bold font-mono">N</span>
+                </span>
+                <span class="nav-label text-white text-base font-bold font-heading tracking-tight">Nile</span>
+            </a>
+            <button onclick="toggleSidebar()" class="p-2 rounded-xl hover:bg-white/[0.06] transition-all duration-200" title="Toggle sidebar">
+                <svg id="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/40 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Divider -->
+        <div class="mx-5 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"></div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav flex-1 overflow-y-auto py-5 px-3 space-y-1">
+
+            <!-- Section: Main -->
+            <p class="sidebar-section-title text-[9px] font-mono uppercase tracking-[0.25em] text-white/20 px-3 mb-2 mt-1">Main</p>
+
+            <a href="{% url 'homepage' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'homepage' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" /></svg>
+                <span class="nav-label">Home</span>
+                <span class="tooltip-text">Home</span>
+            </a>
+
+            <a href="{% url 'dashboard_home' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'dashboard_home' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>
+                <span class="nav-label">Dashboard</span>
+                <span class="tooltip-text">Dashboard</span>
+            </a>
+
+            <!-- Section: Data -->
+            <p class="sidebar-section-title text-[9px] font-mono uppercase tracking-[0.25em] text-white/20 px-3 mb-2 mt-5">Data</p>
+
+            <a href="{% url 'control_center' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'control_center' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                <span class="nav-label">Upload Data</span>
+                <span class="tooltip-text">Upload Data</span>
+            </a>
+
+            <a href="{% url 'upload_history' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'upload_history' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="nav-label">History</span>
+                <span class="tooltip-text">History</span>
+            </a>
+
+            <!-- Section: Analytics -->
+            <p class="sidebar-section-title text-[9px] font-mono uppercase tracking-[0.25em] text-white/20 px-3 mb-2 mt-5">Analytics</p>
+
+            <a href="{% url 'graphs' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'graphs' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                <span class="nav-label">Graphs</span>
+                <span class="tooltip-text">Graphs</span>
+            </a>
+
+            <a href="{% url 'forecasting_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'forecasting_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                <span class="nav-label">Forecasting</span>
+                <span class="tooltip-text">Forecasting</span>
+            </a>
+
+            <a href="{% url 'anomaly_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'anomaly_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span class="nav-label">Anomalies</span>
+                <span class="tooltip-text">Anomalies</span>
+            </a>
+
+            <a href="{% url 'cohort_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'cohort_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="nav-label">Cohorts</span>
+                <span class="tooltip-text">Cohorts</span>
+            </a>
+
+            <a href="{% url 'clv_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'clv_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="nav-label">CLV</span>
+                <span class="tooltip-text">Customer Lifetime Value</span>
+            </a>
+
+            <a href="{% url 'associations_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'associations_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                <span class="nav-label">Associations</span>
+                <span class="tooltip-text">Product Associations</span>
+            </a>
+
+            <a href="{% url 'whatif_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'whatif_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                <span class="nav-label">What-If</span>
+                <span class="tooltip-text">What-If Simulator</span>
+            </a>
+
+            <a href="{% url 'report_page' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'report_page' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <span class="nav-label">Reports</span>
+                <span class="tooltip-text">PDF Reports</span>
+            </a>
+
+            <!-- Section: System -->
+            <p class="sidebar-section-title text-[9px] font-mono uppercase tracking-[0.25em] text-white/20 px-3 mb-2 mt-5">System</p>
+
+            <a href="{% url 'task_monitor' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'task_monitor' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <span class="nav-label">Tasks</span>
+                <span class="tooltip-text">Tasks</span>
+            </a>
+
+            <a href="{% url 'audit_log' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'audit_log' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <span class="nav-label">Audit Log</span>
+                <span class="tooltip-text">Audit Log</span>
+            </a>
+        </nav>
+
+        <!-- Divider -->
+        <div class="mx-5 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"></div>
+
+        <!-- User Section (bottom) -->
+        <div class="p-4">
+            <a href="{% url 'profile' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 hover:bg-white/[0.04] transition-all">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-red to-red-400 flex items-center justify-center shrink-0 shadow-md shadow-red-900/20">
+                    <span class="text-white text-xs font-bold">{{ user.username|make_list|first|upper }}</span>
+                </div>
+                <div class="nav-label flex flex-col min-w-0">
+                    <span class="text-sm font-semibold text-white/90 leading-tight truncate">{{ user.username }}</span>
+                    <span class="text-[10px] text-white/30 leading-tight font-mono">{% if user.is_admin_user %}Admin{% else %}{{ user.role|title }}{% endif %}</span>
+                </div>
+                <span class="tooltip-text">Profile</span>
+            </a>
+            <a href="{% url 'auth_logout' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2 mt-1 text-white/30 hover:text-brand-red hover:bg-white/[0.04] transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                <span class="nav-label text-sm">Logout</span>
+                <span class="tooltip-text">Logout</span>
+            </a>
+        </div>
+
+        <!-- Dark Mode Toggle -->
+        <div class="px-5 pb-2 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                <span class="nav-label text-[10px] font-mono text-white/30">Dark Mode</span>
+            </div>
+            <div class="dark-toggle" onclick="toggleDarkMode()" title="Toggle dark mode">
+                <div class="toggle-dot"></div>
+            </div>
+        </div>
+
+        <!-- System status -->
+        <div class="px-5 pb-4 flex items-center space-x-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+            <span class="nav-label text-[9px] font-mono text-white/20 uppercase tracking-[0.2em]">System Online</span>
+            <span class="tooltip-text">Status</span>
+        </div>
+    </aside>
+
+    <!-- Expand button (visible only when collapsed on desktop) -->
+    <button id="sidebar-expand-btn" onclick="toggleSidebar()" class="hidden fixed top-5 left-4 z-[51] w-10 h-10 rounded-xl shadow-lg items-center justify-center transition-all duration-300 hover:scale-105" style="background:#0D0D12; box-shadow: 0 4px 16px rgba(0,0,0,0.4);" title="Expand sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+    </button>
+
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[49] hidden lg:hidden" onclick="closeMobileSidebar()"></div>
+
+    <!-- Mobile top bar -->
+    <div class="lg:hidden fixed top-0 left-0 right-0 z-[48] px-4 py-3 flex items-center justify-between" style="background: rgba(13,13,18,0.95); backdrop-filter: blur(16px);">
+        <button onclick="openMobileSidebar()" class="p-2 rounded-xl hover:bg-white/[0.06] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <span class="font-heading font-bold text-sm text-white/90">Nile Analytics</span>
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-red to-red-400 flex items-center justify-center shadow-md shadow-red-900/20">
+            <span class="text-white text-xs font-bold">{{ user.username|make_list|first|upper }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ─── Main Content ────────────────────────────────────────────────── -->
+    <main class="main-content {% if user.is_authenticated %}ml-64 lg:ml-64{% endif %} min-h-screen" id="main-content">
+        <div class="container mx-auto px-8 {% if user.is_authenticated %}pt-8 lg:pt-8 pt-20{% else %}pt-24{% endif %} pb-12">
+            <div>
+                {% if messages %}
+                <div class="mb-8 space-y-3">
+                    {% for message in messages %}
+                    <div class="px-6 py-4 rounded-2xl text-sm font-mono flex items-center shadow-sm
+                        {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+
+    {% if not user.is_authenticated %}
+    <footer class="mt-auto py-12 border-t border-brand-border bg-white">
+        <div class="container mx-auto px-8 flex justify-between items-center text-[10px] font-mono text-brand-muted uppercase tracking-[0.3em]">
+            <span>&copy; 2026 Nile Corp // System_Ready</span>
+            <div class="flex space-x-8">
+                <span>Latency: 0.12ms</span>
+                <span>Uptime: 99.99%</span>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+
+    <script>
+        // ─── Dark Mode ────────────────────────────────────────────────────
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('darkMode', html.classList.contains('dark'));
+        }
+
+        // ─── Sidebar Logic ──────────────────────────────────────────────────
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('main-content');
+            const icon = document.getElementById('sidebar-toggle-icon');
+            const expandBtn = document.getElementById('sidebar-expand-btn');
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebar.style.width = '0px';
+                sidebar.style.overflow = 'hidden';
+                main.style.marginLeft = '0px';
+                icon.style.transform = 'rotate(180deg)';
+                if (expandBtn) expandBtn.classList.remove('hidden');
+                if (expandBtn) expandBtn.classList.add('flex');
+                localStorage.setItem('sidebarCollapsed', 'true');
+            } else {
+                sidebar.style.width = '256px';
+                sidebar.style.overflow = '';
+                main.style.marginLeft = '256px';
+                icon.style.transform = 'rotate(0deg)';
+                if (expandBtn) expandBtn.classList.add('hidden');
+                if (expandBtn) expandBtn.classList.remove('flex');
+                localStorage.setItem('sidebarCollapsed', 'false');
+            }
+        }
+
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.remove('collapsed');
+            sidebar.style.width = '256px';
+            sidebar.style.transform = 'translateX(0)';
+            overlay.classList.remove('hidden');
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.style.transform = 'translateX(-100%)';
+            overlay.classList.add('hidden');
+        }
+
+        // Restore sidebar state
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                // Mobile: hide sidebar by default
+                if (window.innerWidth < 1024) {
+                    sidebar.style.transform = 'translateX(-100%)';
+                } else {
+                    sidebar.style.transform = 'translateX(0)';
+                    const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                    if (collapsed) {
+                        sidebar.classList.add('collapsed');
+                        sidebar.style.width = '0px';
+                        sidebar.style.overflow = 'hidden';
+                        document.getElementById('main-content').style.marginLeft = '0px';
+                        document.getElementById('sidebar-toggle-icon').style.transform = 'rotate(180deg)';
+                        const expandBtn = document.getElementById('sidebar-expand-btn');
+                        if (expandBtn) { expandBtn.classList.remove('hidden'); expandBtn.classList.add('flex'); }
+                    }
+                }
+            }
+        });
+
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        function initAnimations(container = document) {
+            // Stats stagger
+            const isDocument = container === document;
+            const targets = isDocument 
+                ? Array.from(document.querySelectorAll(".tactical-glow"))
+                : Array.from(container.querySelectorAll(".tactical-glow"));
+            
+            if (!isDocument && container.classList && container.classList.contains("tactical-glow")) {
+                targets.unshift(container);
+            }
+
+            if (targets.length > 0) {
+                gsap.from(targets, {
+                    duration: 1.2,
+                    y: 60,
+                    opacity: 0,
+                    stagger: 0.15,
+                    ease: "power4.out",
+                    clearProps: "all"
+                });
+            }
+
+            // Heading reveal
+            const headings = isDocument
+                ? Array.from(document.querySelectorAll(".font-heading"))
+                : Array.from(container.querySelectorAll(".font-heading"));
+
+            if (!isDocument && container.classList && container.classList.contains("font-heading")) {
+                headings.unshift(container);
+            }
+
+            if (headings.length > 0) {
+                gsap.from(headings, {
+                    duration: 1,
+                    y: 30,
+                    opacity: 0,
+                    ease: "power3.out",
+                    clearProps: "all"
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initAnimations();
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            const isGet = evt.detail.requestConfig && evt.detail.requestConfig.verb === 'get';
+            const isHistory = evt.detail.target.id === 'upload-history';
+            
+            // Skip entrance animations for background polling updates
+            if (isGet && isHistory) return;
+            
+            const scripts = evt.detail.elt.querySelectorAll('script');
+            scripts.forEach(s => eval(s.innerHTML));
+            // Only animate the newly swapped content to prevent global "popping"
+            initAnimations(evt.detail.target);
+        });
+    </script>
+</body>
+</html>

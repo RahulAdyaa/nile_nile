@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-heading font-bold">Processing History</h1>
+            <p class="text-sm text-brand-muted mt-1">All uploaded files and their processing status</p>
+        </div>
+        <a href="{% url 'control_center' %}" class="px-5 py-2.5 bg-brand-text text-white text-sm font-semibold rounded-full hover:bg-brand-red transition-colors">
+            + Upload New
+        </a>
+    </div>
+
+    {% if uploads %}
+    <div class="bg-white tactical-border rounded-2xl overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-brand-border">
+                    <th class="px-6 py-4 text-left text-[10px] font-mono uppercase tracking-widest text-brand-muted">Filename</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-mono uppercase tracking-widest text-brand-muted">Status</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-mono uppercase tracking-widest text-brand-muted">Rows</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-mono uppercase tracking-widest text-brand-muted">Time</th>
+                    <th class="px-6 py-4 text-left text-[10px] font-mono uppercase tracking-widest text-brand-muted">Uploaded</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for u in uploads %}
+                <tr class="hover:bg-zinc-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <span class="text-sm font-semibold truncate max-w-[250px]">{{ u.original_filename }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase
+                            {% if u.status == 'completed' %}bg-green-50 text-green-600 border border-green-200
+                            {% elif u.status == 'failed' %}bg-red-50 text-red-600 border border-red-200
+                            {% elif u.status == 'processing' %}bg-yellow-50 text-yellow-600 border border-yellow-200
+                            {% else %}bg-zinc-50 text-zinc-500 border border-zinc-200{% endif %}">
+                            {% if u.status == 'completed' %}<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            {% elif u.status == 'failed' %}<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                            {% elif u.status == 'processing' %}<span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                            {% else %}<span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>{% endif %}
+                            <span>{{ u.status }}</span>
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-mono text-brand-muted">{{ u.rows_processed|default:"—" }}</td>
+                    <td class="px-6 py-4 text-sm font-mono text-brand-muted">{{ u.processing_time_ms|default:"—" }}ms</td>
+                    <td class="px-6 py-4 text-sm text-brand-muted">{{ u.uploaded_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white tactical-border p-16 rounded-2xl text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-zinc-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+        <p class="text-brand-muted text-sm">No uploads yet. <a href="{% url 'control_center' %}" class="text-brand-red hover:underline">Upload your first file</a>.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

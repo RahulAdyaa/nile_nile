@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NILE // SOCIAL_LOGIN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { bg: '#FDFDFD', text: '#111111', red: '#E63B2E', muted: '#52525B', border: '#E4E4E7' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.6s ease-out both', 'slide-up': 'slideUp 0.5s ease-out both' },
+                    keyframes: {
+                        fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+                        slideUp: { from: { opacity: '0', transform: 'translateY(20px)' }, to: { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #FDFDFD; }
+        .auth-grid { background-image: radial-gradient(circle, #E4E4E7 1px, transparent 1px); background-size: 28px 28px; }
+    </style>
+</head>
+<body class="min-h-screen font-sans text-brand-text">
+
+    <div class="min-h-screen auth-grid flex flex-col items-center justify-center px-4 py-16">
+
+        <div class="mb-10 animate-fade-in text-center">
+            <p class="text-[10px] font-mono uppercase tracking-[0.4em] text-brand-muted mb-2">Nile Corporation</p>
+            <h1 class="text-3xl font-heading font-bold tracking-tighter">
+                NILE <span class="text-brand-red">//</span> ANALYTICS
+            </h1>
+        </div>
+
+        <div class="w-full max-w-md bg-white border border-brand-border rounded-3xl p-10 shadow-sm animate-slide-up">
+
+            <div class="mb-8">
+                <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-3">
+                    <span class="w-2 h-2 bg-brand-red rounded-full"></span>
+                    <span>Auth_Gate // External_Node</span>
+                </div>
+                <h2 class="text-2xl font-heading font-bold text-brand-text">Sign In via {{ provider.name }}</h2>
+                <p class="text-sm text-brand-muted mt-2">You are about to sign in using a third-party account from {{ provider.name }}.</p>
+            </div>
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                <button type="submit"
+                    class="w-full py-3.5 bg-brand-text text-white rounded-xl font-heading font-semibold text-sm tracking-wide hover:bg-brand-red transition-all duration-200">
+                    Continue with {{ provider.name }} →
+                </button>
+            </form>
+
+        </div>
+
+        <p class="mt-8 text-[10px] font-mono text-brand-muted uppercase tracking-widest animate-fade-in opacity-60">
+            Auth Service → Waiting for Confirmation
+        </p>
+
+    </div>
+</body>
+</html>

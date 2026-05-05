@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-12">
+
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-brand-border">
+        <div>
+            <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-4">
+                <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+                <span>Security_Telemetry // Audit_Stream</span>
+            </div>
+            <h2 class="text-5xl font-heading font-bold text-brand-text tracking-tight">System Audit Log</h2>
+            <p class="text-brand-muted mt-3 max-w-xl">Complete activity timeline — logins, uploads, pipeline triggers, and exports.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'dashboard_home' %}" class="px-6 py-2.5 tactical-border rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-bg transition-all">← Dashboard</a>
+            <a href="{% url 'control_center' %}" class="px-6 py-2.5 bg-brand-text text-white rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-red transition-all">Control_Center →</a>
+        </div>
+    </div>
+
+    <!-- Audit Table -->
+    <div class="bg-white tactical-border rounded-3xl p-10 tactical-glow">
+        {% if logs %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-brand-border text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                        <th class="text-left py-3 pr-4">Timestamp</th>
+                        <th class="text-left py-3 pr-4">User</th>
+                        <th class="text-left py-3 pr-4">Action</th>
+                        <th class="text-left py-3 pr-4">Details</th>
+                        <th class="text-right py-3">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="border-b border-brand-border/40 hover:bg-brand-bg/50 transition-colors">
+                        <td class="py-3 pr-4 font-mono text-[11px] text-brand-muted whitespace-nowrap">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td class="py-3 pr-4">
+                            {% if log.user %}
+                            <span class="font-mono font-medium text-brand-text">{{ log.user.username }}</span>
+                            {% else %}
+                            <span class="font-mono text-brand-muted italic">system</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 pr-4">
+                            {% if log.action == 'login' %}
+                                <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">Login</span>
+                            {% elif log.action == 'logout' %}
+                                <span class="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">Logout</span>
+                            {% elif log.action == 'upload' %}
+                                <span class="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">Upload</span>
+                            {% elif log.action == 'etl_trigger' %}
+                                <span class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">ETL</span>
+                            {% elif log.action == 'export' %}
+                                <span class="px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">Export</span>
+                            {% elif log.action == 'register' %}
+                                <span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">Register</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 bg-gray-50 text-gray-600 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 pr-4 font-mono text-[11px] text-brand-muted max-w-xs truncate">{{ log.detail|default:"—" }}</td>
+                        <td class="py-3 text-right font-mono text-[11px] text-brand-muted">{{ log.ip_address|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-20 text-brand-muted">
+            <p class="text-sm font-heading">No audit entries yet.</p>
+            <p class="text-[10px] font-mono uppercase tracking-widest mt-2">Activity will be logged as users interact with the platform.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

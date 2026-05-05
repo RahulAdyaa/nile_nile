@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-heading font-bold mb-4">About <span class="text-brand-red">Nile</span> Analytics</h1>
+        <p class="text-brand-muted">E-commerce analytics platform built for data-driven decisions.</p>
+    </div>
+
+    <div class="space-y-8">
+        <div class="bg-white tactical-border p-8 rounded-2xl">
+            <h2 class="text-xl font-heading font-bold mb-3">What is Nile Analytics?</h2>
+            <p class="text-sm text-brand-muted leading-relaxed">
+                Nile Analytics is a full-stack data analytics platform designed for e-commerce businesses. 
+                Upload your sales data in any format — CSV or Excel — and get instant insights into revenue, 
+                profit margins, customer demographics, product performance, and regional trends. 
+                The platform automatically cleans, transforms, and loads your data using a sophisticated ETL pipeline.
+            </p>
+        </div>
+
+        <div class="bg-white tactical-border p-8 rounded-2xl">
+            <h2 class="text-xl font-heading font-bold mb-3">Architecture</h2>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">Backend</p>
+                    <p class="font-semibold">Django + PostgreSQL</p>
+                </div>
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">Task Queue</p>
+                    <p class="font-semibold">Celery + SQLAlchemy Broker</p>
+                </div>
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">ETL Engine</p>
+                    <p class="font-semibold">Pandas + Custom Pipeline</p>
+                </div>
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">Forecasting</p>
+                    <p class="font-semibold">Holt-Winters (statsmodels)</p>
+                </div>
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">Charts</p>
+                    <p class="font-semibold">Plotly.js</p>
+                </div>
+                <div class="p-4 bg-zinc-50 rounded-xl">
+                    <p class="font-mono text-[10px] text-brand-muted uppercase tracking-widest mb-1">Frontend</p>
+                    <p class="font-semibold">Django Templates + HTMX</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white tactical-border p-8 rounded-2xl">
+            <h2 class="text-xl font-heading font-bold mb-3">Key Features</h2>
+            <ul class="space-y-3 text-sm text-brand-muted">
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>Multi-file upload with automatic column detection and smart merging</span>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>Star schema data model (Customer/Product dimensions → Sale fact table)</span>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>Background processing via Celery with automated cron jobs</span>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>90-day revenue forecasting with confidence intervals</span>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>Role-based access control with JWT API authentication</span>
+                </li>
+                <li class="flex items-start space-x-3">
+                    <span class="text-brand-red mt-0.5">●</span>
+                    <span>Full audit logging for security telemetry</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="text-center mt-12">
+        <p class="text-[10px] font-mono text-brand-muted uppercase tracking-[0.3em]">&copy; 2026 Nile Corp // All Rights Reserved</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .anomaly-card {
+        opacity: 0; transform: translateY(24px);
+        transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .anomaly-card.visible { opacity: 1; transform: translateY(0); }
+    .severity-high { background: rgba(230,59,46,0.08); border-color: rgba(230,59,46,0.25); }
+    .severity-medium { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); }
+    .severity-low { background: rgba(161,161,170,0.08); border-color: rgba(161,161,170,0.25); }
+    .severity-dot-high { background: #E63B2E; }
+    .severity-dot-medium { background: #F59E0B; }
+    .severity-dot-low { background: #A1A1AA; }
+</style>
+
+<div class="max-w-7xl mx-auto py-10 px-2">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+                <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.3em]">Detection Engine</span>
+            </div>
+            <h1 class="text-3xl font-heading font-extrabold text-brand-text tracking-tight">Anomaly Detection</h1>
+            <p class="text-sm text-brand-muted mt-1">
+                {% if session %}Session: <span class="font-semibold text-brand-text">{{ session.name }}</span>{% else %}No active session{% endif %}
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="?lookback=30" class="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg border transition-all duration-200 {% if selected_lookback == '30' %}bg-brand-text text-white border-brand-text{% else %}bg-white text-brand-muted border-brand-border hover:border-brand-text{% endif %}">30D</a>
+            <a href="?lookback=90" class="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg border transition-all duration-200 {% if selected_lookback == '90' %}bg-brand-text text-white border-brand-text{% else %}bg-white text-brand-muted border-brand-border hover:border-brand-text{% endif %}">90D</a>
+            <a href="?lookback=180" class="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg border transition-all duration-200 {% if selected_lookback == '180' %}bg-brand-text text-white border-brand-text{% else %}bg-white text-brand-muted border-brand-border hover:border-brand-text{% endif %}">180D</a>
+            <a href="?" class="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-lg border transition-all duration-200 {% if selected_lookback == 'all' %}bg-brand-text text-white border-brand-text{% else %}bg-white text-brand-muted border-brand-border hover:border-brand-text{% endif %}">All</a>
+        </div>
+    </div>
+
+    {% if summary.total_days > 0 %}
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="anomaly-card bg-white border border-brand-border rounded-2xl p-5">
+            <p class="text-[9px] font-mono uppercase tracking-widest text-brand-muted mb-1">Days Analyzed</p>
+            <h3 class="text-2xl font-heading font-extrabold text-brand-text">{{ summary.total_days }}</h3>
+        </div>
+        <div class="anomaly-card bg-white border border-brand-border rounded-2xl p-5">
+            <p class="text-[9px] font-mono uppercase tracking-widest text-brand-muted mb-1">Anomalies Found</p>
+            <h3 class="text-2xl font-heading font-extrabold {% if summary.anomaly_count > 0 %}text-brand-red{% else %}text-emerald-600{% endif %}">{{ summary.anomaly_count }}</h3>
+            <p class="text-[10px] font-mono text-brand-muted mt-0.5">{{ summary.anomaly_rate }}% of days</p>
+        </div>
+        <div class="anomaly-card bg-white border border-brand-border rounded-2xl p-5">
+            <p class="text-[9px] font-mono uppercase tracking-widest text-brand-muted mb-1">Avg Daily Revenue</p>
+            <h3 class="text-2xl font-heading font-extrabold text-brand-text">${{ summary.avg_revenue|floatformat:0 }}</h3>
+            <p class="text-[10px] font-mono text-brand-muted mt-0.5">σ = ${{ summary.std_revenue|floatformat:0 }}</p>
+        </div>
+        <div class="anomaly-card bg-white border border-brand-border rounded-2xl p-5">
+            <p class="text-[9px] font-mono uppercase tracking-widest text-brand-muted mb-1">High Severity</p>
+            <h3 class="text-2xl font-heading font-extrabold {% if summary.high_count > 0 %}text-brand-red{% else %}text-emerald-600{% endif %}">{{ summary.high_count }}</h3>
+            <p class="text-[10px] font-mono text-brand-muted mt-0.5">{{ summary.medium_count }} medium</p>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    {% if chart_html %}
+    <div class="anomaly-card bg-white border border-brand-border rounded-[1.75rem] p-8 mb-8 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-brand-red/60 via-brand-red/20 to-transparent"></div>
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                <svg class="w-4 h-4 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-heading font-extrabold text-brand-text tracking-tight">Revenue Timeline</h3>
+                <p class="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Diamond markers = detected anomalies · Gray band = normal range (±2.5σ)</p>
+            </div>
+        </div>
+        <div>{{ chart_html|safe }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Anomaly List -->
+    {% if anomalies %}
+    <div class="anomaly-card bg-white border border-brand-border rounded-[1.75rem] p-8 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-amber-500/50 via-amber-300/10 to-transparent"></div>
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-heading font-extrabold text-brand-text tracking-tight">Detected Anomalies</h3>
+                <p class="text-[10px] font-mono text-brand-muted uppercase tracking-widest">{{ anomalies|length }} event{{ anomalies|length|pluralize }} flagged</p>
+            </div>
+        </div>
+
+        <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            {% for a in anomalies %}
+            <div class="flex items-start gap-4 p-4 rounded-xl border severity-{{ a.severity }} transition-all hover:scale-[1.005]">
+                <div class="flex flex-col items-center gap-1 pt-0.5">
+                    <div class="w-3 h-3 rounded-full severity-dot-{{ a.severity }} {% if a.severity == 'high' %}animate-pulse{% endif %}"></div>
+                    <span class="text-[8px] font-mono uppercase tracking-wider text-brand-muted">{{ a.severity }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-1">
+                        <span class="text-sm font-heading font-bold text-brand-text">{{ a.date_display }}</span>
+                    </div>
+                    <p class="text-xs text-brand-muted mb-2">{{ a.reasons }}</p>
+                    <div class="flex gap-4 text-[10px] font-mono">
+                        <span class="text-brand-text"><span class="text-brand-muted">Revenue:</span> ${{ a.revenue|floatformat:0 }}</span>
+                        <span class="text-brand-text"><span class="text-brand-muted">Orders:</span> {{ a.orders }}</span>
+                        <span class="text-brand-text"><span class="text-brand-muted">Returns:</span> {{ a.returns }}</span>
+                        {% if a.z_revenue %}<span class="text-brand-muted">Z(rev): {{ a.z_revenue|floatformat:1 }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% elif summary.total_days > 0 %}
+    <div class="anomaly-card bg-white border border-brand-border rounded-[1.75rem] p-12 text-center">
+        <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h3 class="text-lg font-heading font-bold text-brand-text mb-1">All Clear</h3>
+        <p class="text-sm text-brand-muted">No anomalies detected in the selected timeframe. Revenue and order patterns look normal.</p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="bg-white border border-brand-border rounded-[1.75rem] p-16 text-center">
+        <div class="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <svg class="w-7 h-7 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <p class="text-brand-muted text-sm">No data available. <a href="{% url 'control_center' %}" class="text-brand-red hover:underline">Upload data</a> to detect anomalies.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.anomaly-card');
+    cards.forEach(function(card, i) {
+        setTimeout(function() { card.classList.add('visible'); }, i * 100);
+    });
+});
+</script>
+{% endblock %}

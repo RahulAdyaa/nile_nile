@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-10">
+    <div class="bg-white tactical-border rounded-3xl p-10 tactical-glow">
+        <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-4">
+            <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+            <span>Ingestion_Module // Mapping_Review</span>
+        </div>
+        
+        <h2 class="text-3xl font-heading font-bold text-brand-text tracking-tight mb-2">Review Intelligent Mapping</h2>
+        <p class="text-sm text-brand-muted mb-4">
+            Our system has intelligently matched the columns in <strong>{{ upload.original_filename }}</strong>. 
+            Please review the selections below and click "Confirm" to start the ingestion.
+        </p>
+
+        {% if files_remaining > 0 %}
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex items-center space-x-3">
+            <span class="text-blue-600 text-lg">📁</span>
+            <p class="text-sm text-blue-800">
+                <strong>{{ files_remaining }} more file{{ files_remaining|pluralize }}</strong> queued for processing after this one.
+            </p>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="bg-brand-bg rounded-xl p-6 border border-brand-border mb-8 overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-brand-border text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                            <th class="text-left py-3 pr-4">Your Column (File Header)</th>
+                            <th class="text-left py-3">Map To (System Expected)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in preview_data %}
+                        <tr class="border-b border-brand-border/50">
+                            <td class="py-4 pr-4 font-mono text-brand-text font-medium">{{ row.actual }}</td>
+                            <td class="py-4">
+                                <select name="map_{{ row.actual }}" class="w-full bg-white border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-red">
+                                    <option value="">-- Ignore Column --</option>
+                                    {% for exp in expected %}
+                                    <option value="{{ exp }}" {% if row.mapped_to == exp %}selected{% endif %}>{{ exp }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center space-x-3 mb-10 bg-brand-red/5 p-4 rounded-xl border border-brand-red/20">
+                <input type="checkbox" id="wipe_existing" name="wipe_existing" class="w-4 h-4 text-brand-red border-brand-border rounded focus:ring-brand-red">
+                <label for="wipe_existing" class="text-xs font-mono font-bold text-brand-red uppercase tracking-widest cursor-pointer select-none">
+                    Wipe existing session data for a clean ingestion? (Session Data Reset)
+                </label>
+            </div>
+
+            <div class="flex justify-between items-center">
+                <a href="{% url 'control_center' %}" class="px-6 py-2.5 text-sm font-semibold text-brand-muted hover:text-brand-text transition-colors">Cancel Upload</a>
+                <button type="submit" class="px-8 py-3 bg-brand-text text-white rounded-xl font-heading font-semibold text-sm tracking-wide hover:bg-brand-red transition-all duration-200">
+                    {% if files_remaining > 0 %}
+                        Confirm & Next File →
+                    {% else %}
+                        Confirm & Start Processing
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

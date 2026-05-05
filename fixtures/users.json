@@ -1,0 +1,154 @@
+[
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$FMzI46fJ2AVn4KILxhrpXF$qPXIcIqTB+tbbHgRMaYHZ8Kwdr4oWszZnPK442lQnbY=",
+    "last_login": "2026-04-15T18:09:17.525Z",
+    "is_superuser": false,
+    "username": "testanalyst",
+    "first_name": "",
+    "last_name": "",
+    "email": "test@nilecorp.io",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-15T18:06:31.266Z",
+    "role": "analyst",
+    "created_at": "2026-04-15T18:06:31.450Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$3YnLYCaUMa0AZ0FD7PYjkG$K/g7XgkNR8xJsc3YemkuWa9l6A7X03O5dQuT28c3dTc=",
+    "last_login": "2026-04-15T18:55:39.787Z",
+    "is_superuser": false,
+    "username": "rahuladyayt@gmail.com",
+    "first_name": "",
+    "last_name": "",
+    "email": "rahuladyayt@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-15T18:55:39.608Z",
+    "role": "analyst",
+    "created_at": "2026-04-15T18:55:39.782Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$QEuY1LNvwQcLz0ynrRZqXA$/pNJqCL6tZaEuHKdkER9ldtOyHaEF/zcLuK9n8kYDns=",
+    "last_login": "2026-04-15T18:57:29.696Z",
+    "is_superuser": false,
+    "username": "test1",
+    "first_name": "",
+    "last_name": "",
+    "email": "test@test.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-15T18:57:29.491Z",
+    "role": "analyst",
+    "created_at": "2026-04-15T18:57:29.690Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$BSw6uWkytxB4uxldJLS0Jn$ZP3LLRUUn+p+Mj9YBGyzTKFOLNHfG6JIbIvd93w9QRU=",
+    "last_login": "2026-04-27T16:11:16.101Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-04-15T19:15:53.967Z",
+    "role": "analyst",
+    "created_at": "2026-04-15T19:15:54.114Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$bYaJkbQnkxD0j1NgXWKsUW$O0ApcMX2vG0o0v6N0Sqhc/5wEV5DkM3V6f3EVmg/AnQ=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "jvhj",
+    "first_name": "",
+    "last_name": "",
+    "email": "ghcrt@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-22T16:27:14.844Z",
+    "role": "analyst",
+    "created_at": "2026-04-22T16:27:15.018Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "!Hp3IhMJoFGIlCBf8ht7HlyjSRXjjt66L7WflUPY8",
+    "last_login": "2026-04-22T16:32:18.744Z",
+    "is_superuser": false,
+    "username": "rahul",
+    "first_name": "Rahul",
+    "last_name": "Adya",
+    "email": "rahuladyayt2@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-22T16:32:18.724Z",
+    "role": "analyst",
+    "created_at": "2026-04-22T16:32:18.731Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "!G8AUZXLW6TRV41Gx0B7kw5aftxuSyQuYic2cEM1X",
+    "last_login": "2026-04-27T17:18:34.910Z",
+    "is_superuser": true,
+    "username": "nilee",
+    "first_name": "Rahul",
+    "last_name": "adya",
+    "email": "rahuladyayt@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-04-22T17:06:53.974Z",
+    "role": "admin",
+    "created_at": "2026-04-22T17:07:05.561Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$Fl6LyrTwRIN1pAT9UjCsTi$quCklWayYd25Y54mWGc5bLWA4RSPnkaag3ydlhY/dFM=",
+    "last_login": "2026-04-26T20:56:37.733Z",
+    "is_superuser": false,
+    "username": "rahula",
+    "first_name": "",
+    "last_name": "",
+    "email": "rahuladyayt121@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-26T20:56:37.610Z",
+    "role": "analyst",
+    "created_at": "2026-04-26T20:56:37.731Z",
+    "groups": [],
+    "user_permissions": []
+  }
+}
+]

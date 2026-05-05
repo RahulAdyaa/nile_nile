@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NILE // COMPLETE_SIGNUP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { bg: '#FDFDFD', text: '#111111', red: '#E63B2E', muted: '#52525B', border: '#E4E4E7' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.6s ease-out both', 'slide-up': 'slideUp 0.5s ease-out both' },
+                    keyframes: {
+                        fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+                        slideUp: { from: { opacity: '0', transform: 'translateY(20px)' }, to: { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #FDFDFD; }
+        .auth-grid { background-image: radial-gradient(circle, #E4E4E7 1px, transparent 1px); background-size: 28px 28px; }
+        .input-field { transition: border-color 0.2s, box-shadow 0.2s; }
+        .input-field:focus { outline: none; border-color: #E63B2E; box-shadow: 0 0 0 3px rgba(230, 59, 46, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen font-sans text-brand-text">
+
+    <div class="min-h-screen auth-grid flex flex-col items-center justify-center px-4 py-16">
+
+        <div class="mb-10 animate-fade-in text-center">
+            <p class="text-[10px] font-mono uppercase tracking-[0.4em] text-brand-muted mb-2">Nile Corporation</p>
+            <h1 class="text-3xl font-heading font-bold tracking-tighter">
+                NILE <span class="text-brand-red">//</span> ANALYTICS
+            </h1>
+        </div>
+
+        <div class="w-full max-w-md bg-white border border-brand-border rounded-3xl p-10 shadow-sm animate-slide-up">
+
+            <div class="mb-8">
+                <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-3">
+                    <span class="w-2 h-2 bg-brand-red rounded-full"></span>
+                    <span>Auth_Gate // Complete_Profile</span>
+                </div>
+                <h2 class="text-2xl font-heading font-bold text-brand-text">Almost there!</h2>
+                <p class="text-sm text-brand-muted mt-2">You are about to sign up using your {{ account.get_provider.name }} account. Please provide any missing information to complete your registration.</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="mb-6 space-y-2">
+                <div class="flex items-center space-x-2 px-4 py-3 rounded-xl text-sm font-mono bg-red-50 text-red-700 border border-red-200">
+                    <span>Please correct the errors below.</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'socialaccount_signup' %}" class="space-y-5">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-[11px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <p class="text-xs text-brand-muted mt-1">{{ field.help_text|safe }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                    <p class="text-xs text-brand-red mt-1 font-mono">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit"
+                    class="w-full py-3.5 bg-brand-text text-white rounded-xl font-heading font-semibold text-sm tracking-wide hover:bg-brand-red transition-all duration-200 active:scale-[0.99] mt-6">
+                    Complete Signup →
+                </button>
+            </form>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Style allauth generated form fields dynamically
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            if(el.type !== 'hidden' && el.type !== 'checkbox' && el.type !== 'submit') {
+                el.classList.add('input-field', 'w-full', 'px-4', 'py-3', 'border', 'border-brand-border', 'rounded-xl', 'text-sm', 'font-mono', 'bg-brand-bg', 'text-brand-text', 'placeholder-brand-muted/50');
+            }
+        });
+    </script>
+</body>
+</html>

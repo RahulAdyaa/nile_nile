@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .assoc-card {
+        opacity: 0; transform: translateY(24px);
+        transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .assoc-card.visible { opacity: 1; transform: translateY(0); }
+</style>
+
+<div class="max-w-7xl mx-auto py-10 px-2">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+                <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.3em]">Market Basket</span>
+            </div>
+            <h1 class="text-3xl font-heading font-extrabold text-brand-text tracking-tight">Product Associations</h1>
+            <p class="text-sm text-brand-muted mt-1">
+                {% if session %}Session: <span class="font-semibold text-brand-text">{{ session.name }}</span>{% else %}No active session{% endif %}
+            </p>
+        </div>
+    </div>
+
+    {% if summary.rules_found %}
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div class="assoc-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
+            <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Total Baskets</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-text">{{ summary.total_baskets|floatformat:0 }}</div>
+        </div>
+        <div class="assoc-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
+            <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Multi-Item Baskets</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-text">{{ summary.multi_item_baskets|floatformat:0 }}</div>
+        </div>
+        <div class="assoc-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
+            <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Rules Found</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-red">{{ summary.rules_found }}</div>
+        </div>
+        <div class="assoc-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
+            <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Avg Lift</div>
+            <div class="text-2xl font-heading font-extrabold text-green-600">{{ summary.avg_lift }}x</div>
+        </div>
+    </div>
+
+    <!-- Lift Chart -->
+    {% if chart_html %}
+    <div class="assoc-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm mb-10 overflow-hidden">
+        <div class="px-6 py-5 border-b border-zinc-100 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            </div>
+            <div>
+                <h2 class="text-base font-heading font-bold text-brand-text">Top Product Pairs by Lift</h2>
+                <p class="text-[11px] font-mono text-brand-muted">Products frequently bought together (lift &gt; 1 = positive association)</p>
+            </div>
+        </div>
+        <div class="p-4">
+            {{ chart_html|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Rules Table -->
+    {% if rules %}
+    <div class="assoc-card bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-zinc-100 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            </div>
+            <div>
+                <h2 class="text-base font-heading font-bold text-brand-text">Association Rules</h2>
+                <p class="text-[11px] font-mono text-brand-muted">All discovered product pair associations</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table class="w-full text-sm">
+                <thead class="sticky top-0 bg-zinc-50/95 backdrop-blur">
+                    <tr class="text-left text-[10px] font-mono text-brand-muted uppercase tracking-wider">
+                        <th class="px-5 py-3">#</th>
+                        <th class="px-5 py-3">Product A</th>
+                        <th class="px-5 py-3">Product B</th>
+                        <th class="px-5 py-3">Co-Purchases</th>
+                        <th class="px-5 py-3">Support</th>
+                        <th class="px-5 py-3">Confidence</th>
+                        <th class="px-5 py-3">Lift</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-100">
+                    {% for r in rules %}
+                    <tr class="hover:bg-zinc-50/60 transition-colors">
+                        <td class="px-5 py-3 text-brand-muted font-mono text-xs">{{ forloop.counter }}</td>
+                        <td class="px-5 py-3 font-medium text-brand-text">{{ r.product_a }}</td>
+                        <td class="px-5 py-3 font-medium text-brand-text">{{ r.product_b }}</td>
+                        <td class="px-5 py-3 text-brand-muted">{{ r.count }}</td>
+                        <td class="px-5 py-3 text-brand-muted">{{ r.support }}%</td>
+                        <td class="px-5 py-3 text-brand-muted">{{ r.confidence }}%</td>
+                        <td class="px-5 py-3 font-bold {% if r.lift > 2 %}text-brand-red{% elif r.lift > 1 %}text-green-600{% else %}text-brand-muted{% endif %}">{{ r.lift }}x</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+        </div>
+        <p class="text-brand-muted text-sm">No product association rules found. Need multi-item orders to discover patterns.</p>
+        <a href="{% url 'control_center' %}" class="mt-3 text-xs text-brand-red hover:underline">Upload data →</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach((e, i) => {
+                if (e.isIntersecting) {
+                    setTimeout(() => e.target.classList.add('visible'), i * 80);
+                    obs.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.08 });
+        document.querySelectorAll('.assoc-card').forEach(el => obs.observe(el));
+    });
+</script>
+{% endblock %}

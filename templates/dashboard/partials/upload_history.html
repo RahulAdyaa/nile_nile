@@ -1,0 +1,48 @@
+<div class="bg-white tactical-border rounded-3xl p-10 tactical-glow" id="upload-history" hx-get="{% url 'control_center' %}" hx-trigger="{% if processing_active %}every 2s{% else %}every 30s{% endif %}" hx-select="#upload-history" hx-swap="outerHTML">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+            <span>Processing_History //</span>
+        </div>
+    </div>
+
+    {% if uploads %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-brand-border text-[10px] font-mono uppercase tracking-widest text-brand-muted">
+                    <th class="text-left py-3 pr-4">Filename</th>
+                    <th class="text-left py-3 pr-4">Status</th>
+                    <th class="text-right py-3 pr-4">Rows</th>
+                    <th class="text-right py-3 pr-4">Time</th>
+                    <th class="text-right py-3">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in uploads %}
+                <tr class="border-b border-brand-border/50 hover:bg-brand-bg/50 transition-colors">
+                    <td class="py-3 pr-4 font-mono text-brand-text font-medium">{{ u.original_filename }}</td>
+                    <td class="py-3 pr-4">
+                        {% if u.status == 'success' %}
+                            <span class="px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">✓ Success</span>
+                        {% elif u.status == 'failed' %}
+                            <span class="px-2.5 py-1 bg-red-50 text-red-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">✗ Failed</span>
+                        {% elif u.status == 'processing' %}
+                            <span class="px-2.5 py-1 bg-yellow-50 text-yellow-700 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest animate-pulse">⟳ Processing</span>
+                        {% else %}
+                            <span class="px-2.5 py-1 bg-gray-50 text-gray-600 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest">○ Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3 pr-4 text-right font-mono text-brand-muted">{{ u.rows_processed|default:"—" }}</td>
+                    <td class="py-3 pr-4 text-right font-mono text-brand-muted">{{ u.processing_time_ms }}ms</td>
+                    <td class="py-3 text-right font-mono text-[11px] text-brand-muted">{{ u.uploaded_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-16 text-brand-muted">
+        <p class="text-[10px] font-mono uppercase tracking-widest">No ingestion history. Upload your first dataset above.</p>
+    </div>
+    {% endif %}
+</div>

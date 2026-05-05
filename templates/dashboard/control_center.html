@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-12">
+
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-8 border-b border-brand-border">
+        <div>
+            <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-4">
+                <span class="w-2 h-2 bg-brand-red rounded-full animate-pulse"></span>
+                <span>Admin_Operations // Control_Center</span>
+            </div>
+            <h2 class="text-5xl font-heading font-bold text-brand-text tracking-tight">Data Ingestion Hub</h2>
+            <p class="text-brand-muted mt-3 max-w-xl">Upload datasets, trigger ETL pipelines, and monitor processing status. Admin clearance only.</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'dashboard_home' %}" class="px-6 py-2.5 tactical-border rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-bg transition-all">← Dashboard</a>
+            <a href="{% url 'session_list' %}" class="px-6 py-2.5 tactical-border rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-bg transition-all">📁 Sessions</a>
+            <a href="{% url 'audit_log' %}" class="px-6 py-2.5 bg-brand-text text-white rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-red transition-all">Security_Log →</a>
+        </div>
+    </div>
+
+    <!-- Active Session Banner -->
+    <div class="bg-white tactical-border rounded-2xl p-6 flex items-center justify-between tactical-glow">
+        <div class="flex items-center space-x-4">
+            <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                <span class="text-green-600 text-lg">●</span>
+            </div>
+            <div>
+                <p class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-0.5">Active_Session</p>
+                <h3 class="text-lg font-heading font-bold text-brand-text">
+                    {% if active_session %}{{ active_session.name }}{% else %}No Active Session{% endif %}
+                </h3>
+                {% if active_session %}
+                <p class="text-[11px] text-brand-muted">Created {{ active_session.created_at|date:"M d, Y H:i" }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <form method="post" action="{% url 'new_session' %}">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-2.5 bg-brand-red text-white rounded-full text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-text transition-all">
+                    ✦ New Analysis
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- System Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white tactical-border p-6 rounded-2xl tactical-glow">
+            <p class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-1">Total_Sales_Records</p>
+            <h3 class="text-3xl font-heading font-bold text-brand-text">{{ total_sales|default:"0" }}</h3>
+        </div>
+        <div class="bg-white tactical-border p-6 rounded-2xl tactical-glow">
+            <p class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-1">Active_Customers</p>
+            <h3 class="text-3xl font-heading font-bold text-brand-text">{{ total_customers|default:"0" }}</h3>
+        </div>
+        <div class="bg-white tactical-border p-6 rounded-2xl tactical-glow">
+            <p class="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted mb-1">Product_Catalog</p>
+            <h3 class="text-3xl font-heading font-bold text-brand-text">{{ total_products|default:"0" }}</h3>
+        </div>
+    </div>
+
+    <!-- Upload Zone -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest">
+                <span class="w-2 h-2 bg-brand-red rounded-full"></span>
+                <span>Ingestion_Module // Source_Selection</span>
+            </div>
+            
+            <!-- Source Switcher Tabs -->
+            <div class="flex bg-brand-bg p-1 rounded-xl tactical-border">
+                <button onclick="switchSource('upload')" id="tab-upload" class="px-6 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest transition-all bg-white shadow-sm text-brand-text">⚡ Live_Upload</button>
+                <button onclick="switchSource('server')" id="tab-server" class="px-6 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest transition-all text-brand-muted hover:text-brand-text">📂 Server_Repo</button>
+            </div>
+        </div>
+
+        <!-- Upload Source View -->
+        <div id="view-upload" class="block">
+            <form id="upload-form" 
+                  hx-post="{% url 'upload_data' %}" 
+                  hx-encoding="multipart/form-data"
+                  hx-target="#upload-history" 
+                  hx-swap="outerHTML"
+                  hx-indicator="#upload-spinner"
+                  class="space-y-8">
+                {% csrf_token %}
+                <!-- Hidden field for session action — set by modal -->
+                <input type="hidden" name="session_action" id="session-action-upload" value="add">
+
+                <div id="drop-zone" 
+                     class="relative z-10 tactical-border border-dashed border-2 rounded-3xl p-16 text-center cursor-pointer hover:bg-brand-bg/80 transition-all group overflow-hidden pointer-events-auto"
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)" 
+                     ondrop="handleDrop(event)">
+                    
+                    <div class="absolute inset-0 bg-brand-red opacity-0 group-hover:opacity-[0.02] transition-opacity"></div>
+                    
+                    <div class="flex flex-col items-center space-y-4">
+                        <div class="w-12 h-12 bg-brand-bg rounded-2xl flex items-center justify-center text-brand-red tactical-border mb-2 group-hover:scale-110 transition-transform">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-brand-text">Drag & drop your CSV or Excel files here</p>
+                            <p class="text-[11px] text-brand-muted mt-1">or click to browse • Accepts .csv and .xlsx • Multiple files supported</p>
+                        </div>
+                        <input type="file" name="file" id="file-input" class="hidden" multiple onchange="showFileName(this)">
+                        <p id="file-name" class="text-[10px] font-mono text-brand-red uppercase tracking-widest hidden"></p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end items-center space-x-4 mt-6">
+                    <div id="upload-spinner" class="htmx-indicator flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest">
+                        <div class="animate-spin h-4 w-4 border-2 border-brand-red border-t-transparent rounded-full"></div>
+                        <span>Streaming_Packets...</span>
+                    </div>
+                    <button type="button" id="upload-btn"
+                        class="px-8 py-3 bg-brand-text text-white rounded-xl font-heading font-semibold text-sm tracking-wide hover:bg-brand-red transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        disabled
+                        onclick="handleUploadClick()">
+                        ⚡ Execute Pipeline
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Server Source View -->
+        <div id="view-server" class="hidden">
+            <form id="server-form" hx-post="{% url 'process_server_file' %}" 
+                  hx-target="#upload-history" 
+                  hx-swap="outerHTML"
+                  hx-indicator="#server-spinner"
+                  class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="session_action" id="session-action-server" value="add">
+
+                <div class="grid grid-cols-1 gap-4">
+                    {% for filename in server_files %}
+                    <label class="flex items-center justify-between p-6 tactical-border rounded-2xl cursor-pointer hover:bg-brand-bg transition-all group">
+                        <div class="flex items-center space-x-4">
+                            <input type="radio" name="filename" value="{{ filename }}" class="w-5 h-5 text-brand-red focus:ring-brand-red border-brand-border" required>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-semibold text-brand-text">{{ filename }}</span>
+                                <span class="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Server_Repository // Dataset</span>
+                            </div>
+                        </div>
+                        <div class="text-brand-muted group-hover:text-brand-red transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </div>
+                    </label>
+                    {% empty %}
+                    <div class="text-center py-12 tactical-border border-dashed rounded-2xl bg-brand-bg/30">
+                        <p class="text-[10px] font-mono uppercase tracking-widest text-brand-muted">Repository empty. Add files to /data/ folder.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if server_files %}
+                <div class="flex justify-end items-center space-x-4 mt-8">
+                    <div id="server-spinner" class="htmx-indicator flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest">
+                        <div class="animate-spin h-4 w-4 border-2 border-brand-red border-t-transparent rounded-full"></div>
+                        <span>Initializing_Repo_Stream...</span>
+                    </div>
+                    <button type="button" onclick="handleServerClick()" class="px-10 py-4 bg-brand-red text-white rounded-2xl font-heading font-bold text-sm tracking-widest hover:bg-brand-text hover:scale-[1.02] transition-all shadow-xl shadow-red-500/10">
+                        ⚡ EXECUTE FROM REPO
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+
+    <!-- Upload History -->
+    {% include 'dashboard/partials/upload_history.html' %}
+
+    <!-- Archived Sessions Quick View -->
+    {% if archived_sessions %}
+    <div class="bg-white tactical-border rounded-3xl p-10 tactical-glow">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+                <span>Previous_Sessions //</span>
+            </div>
+            <a href="{% url 'session_list' %}" class="text-[10px] font-mono text-brand-red uppercase tracking-widest hover:underline">View All →</a>
+        </div>
+        <div class="space-y-3">
+            {% for s in archived_sessions %}
+            <div class="flex items-center justify-between p-4 tactical-border rounded-xl hover:bg-brand-bg/50 transition-colors">
+                <div>
+                    <p class="text-sm font-semibold text-brand-text">{{ s.name }}</p>
+                    <p class="text-[10px] font-mono text-brand-muted">{{ s.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <form method="post" action="{% url 'restore_session' s.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-1.5 tactical-border rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-brand-red hover:text-white hover:border-brand-red transition-all">
+                        Restore
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Session Action Modal -->
+<div id="session-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center" style="display:none;">
+    <div class="bg-white rounded-3xl p-10 max-w-md w-full mx-4 shadow-2xl">
+        <div class="flex items-center space-x-2 text-[10px] font-mono text-brand-red uppercase tracking-widest mb-6">
+            <span class="w-2 h-2 bg-brand-red rounded-full"></span>
+            <span>Session_Manager</span>
+        </div>
+        <h3 class="text-2xl font-heading font-bold text-brand-text mb-3">Active session detected</h3>
+        <p class="text-sm text-brand-muted mb-8">You have an active analysis session. How would you like to proceed?</p>
+        
+        <div class="space-y-3">
+            <button onclick="submitWithAction('add')" class="w-full p-4 tactical-border rounded-xl text-left hover:bg-brand-bg transition-all group">
+                <p class="text-sm font-semibold text-brand-text group-hover:text-brand-red">📎 Add to current session</p>
+                <p class="text-[11px] text-brand-muted mt-1">Merge this data with existing analysis</p>
+            </button>
+            <button onclick="submitWithAction('new')" class="w-full p-4 tactical-border rounded-xl text-left hover:bg-brand-bg transition-all group">
+                <p class="text-sm font-semibold text-brand-text group-hover:text-brand-red">✦ Start new analysis</p>
+                <p class="text-[11px] text-brand-muted mt-1">Archive current session & start fresh</p>
+            </button>
+        </div>
+        
+        <button onclick="closeModal()" class="w-full mt-4 py-2 text-center text-[10px] font-mono text-brand-muted uppercase tracking-widest hover:text-brand-text transition-colors">Cancel</button>
+    </div>
+</div>
+
+<script>
+    const tabUpload = document.getElementById('tab-upload');
+    const tabServer = document.getElementById('tab-server');
+    const viewUpload = document.getElementById('view-upload');
+    const viewServer = document.getElementById('view-server');
+    const sessionModal = document.getElementById('session-modal');
+    let currentFormType = 'upload'; // 'upload' or 'server'
+
+    function switchSource(source) {
+        if (source === 'upload') {
+            viewUpload.classList.remove('hidden');
+            viewServer.classList.add('hidden');
+            tabUpload.classList.add('bg-white', 'shadow-sm', 'text-brand-text');
+            tabUpload.classList.remove('text-brand-muted');
+            tabServer.classList.add('text-brand-muted');
+            tabServer.classList.remove('bg-white', 'shadow-sm', 'text-brand-text');
+        } else {
+            viewUpload.classList.add('hidden');
+            viewServer.classList.remove('hidden');
+            tabServer.classList.add('bg-white', 'shadow-sm', 'text-brand-text');
+            tabServer.classList.remove('text-brand-muted');
+            tabUpload.classList.add('text-brand-muted');
+            tabUpload.classList.remove('bg-white', 'shadow-sm', 'text-brand-text');
+        }
+    }
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileNameEl = document.getElementById('file-name');
+    const uploadBtn = document.getElementById('upload-btn');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        dropZone.classList.add('border-brand-red', 'bg-red-50/30');
+    }
+    function handleDragLeave(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-brand-red', 'bg-red-50/30');
+    }
+    function handleDrop(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-brand-red', 'bg-red-50/30');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            const dt = new DataTransfer();
+            for (let i = 0; i < files.length; i++) {
+                dt.items.add(files[i]);
+            }
+            fileInput.files = dt.files;
+            showFileName(fileInput);
+        }
+    }
+    function showFileName(input) {
+        if (input.files.length) {
+            if (input.files.length === 1) {
+                fileNameEl.textContent = '▸ ' + input.files[0].name;
+                const name = input.files[0].name.toLowerCase();
+                if (!name.endsWith('.csv') && !name.endsWith('.xlsx')) {
+                    fileNameEl.textContent += ' (Unsupported Format)';
+                    fileNameEl.classList.add('text-orange-500');
+                    uploadBtn.disabled = true;
+                    return;
+                }
+            } else {
+                fileNameEl.textContent = '▸ ' + input.files.length + ' files selected';
+            }
+            fileNameEl.classList.remove('hidden', 'text-orange-500');
+            uploadBtn.disabled = false;
+        }
+    }
+
+    // Session-aware upload handling
+    const hasActiveSession = {{ active_session|yesno:"true,false" }};
+
+    function handleUploadClick() {
+        currentFormType = 'upload';
+        if (hasActiveSession) {
+            openModal();
+        } else {
+            document.getElementById('session-action-upload').value = 'new';
+            htmx.trigger('#upload-form', 'submit');
+        }
+    }
+
+    function handleServerClick() {
+        currentFormType = 'server';
+        if (hasActiveSession) {
+            openModal();
+        } else {
+            document.getElementById('session-action-server').value = 'new';
+            htmx.trigger('#server-form', 'submit');
+        }
+    }
+
+    function openModal() {
+        sessionModal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        sessionModal.style.display = 'none';
+    }
+
+    function submitWithAction(action) {
+        closeModal();
+        if (currentFormType === 'upload') {
+            document.getElementById('session-action-upload').value = action;
+            htmx.trigger('#upload-form', 'submit');
+        } else {
+            document.getElementById('session-action-server').value = action;
+            htmx.trigger('#server-form', 'submit');
+        }
+    }
+
+    // Close modal on backdrop click
+    sessionModal.addEventListener('click', function(e) {
+        if (e.target === sessionModal) closeModal();
+    });
+</script>
+{% endblock %}
