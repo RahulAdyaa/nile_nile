@@ -90,7 +90,7 @@ class ForecastingService:
                     initialization_method="heuristic",
                     use_boxcox=False,
                 )
-                fit = model.fit(optimized=True, use_brute=False)
+                fit = model.fit(optimized=False, use_brute=False)
                 forecast_y = fit.forecast(forecast_weeks)
                 residuals = fit.resid
 

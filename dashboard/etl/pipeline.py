@@ -541,6 +541,12 @@ class ETLPipeline:
         for col in ['Customer Name', 'Region', 'City', 'Category',
                      'Sub-Category', 'Product Name', 'Payment Mode']:
             df[col] = df[col].astype(str).str.strip().str.title()
+            
+        # If Customer Name is unknown but we have a Customer ID, append the ID so they don't all 
+        # collapse into a single "Unknown Customer" due to DB unique constraints.
+        missing_names = df['Customer Name'] == 'Unknown Customer'
+        has_id = df['Customer ID'].astype(str).str.strip() != ''
+        df.loc[missing_names & has_id, 'Customer Name'] = 'Unknown Customer (' + df.loc[missing_names & has_id, 'Customer ID'].astype(str) + ')'
 
         gmap = {'m': 'Male', 'male': 'Male', 'f': 'Female', 'female': 'Female',
                 'other': 'Other', 'nonbinary': 'Other', 'non-binary': 'Other'}
@@ -592,10 +598,20 @@ class ETLPipeline:
                 Product.objects.filter(**sess_kw).delete()
                 print("[Load] Wiped existing session data.")
 
+
             # ── Customers ──
-            # Deduplicate by name+region+city (the DB constraint), not just Customer ID
-            cust_dedup_cols = ['Customer Name', 'Region', 'City']
-            unique_custs = df[CUSTOMER_DIMS].drop_duplicates(subset=cust_dedup_cols)
+            # Use Customer ID as primary dedup key when available,
+            # fall back to name+region+city for files without IDs.
+            cust_df = df[CUSTOMER_DIMS].copy()
+            has_cust_ids = cust_df['Customer ID'].astype(str).str.strip().replace('', pd.NA).notna().any()
+            if has_cust_ids:
+                # Dedup by Customer ID first, then fallback rows (no ID) by name+region+city
+                with_id = cust_df[cust_df['Customer ID'].astype(str).str.strip() != ''].drop_duplicates(subset=['Customer ID'])
+                without_id = cust_df[cust_df['Customer ID'].astype(str).str.strip() == ''].drop_duplicates(subset=['Customer Name', 'Region', 'City'])
+                unique_custs = pd.concat([with_id, without_id], ignore_index=True)
+            else:
+                unique_custs = cust_df.drop_duplicates(subset=['Customer Name', 'Region', 'City'])
+
 
             all_existing = list(Customer.objects.filter(**sess_kw))
             by_cid = {c.customer_id: c for c in all_existing if c.customer_id}

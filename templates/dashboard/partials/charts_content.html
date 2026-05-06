@@ -125,6 +125,7 @@
             <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Visual_01 //</span>
             </div>
+            <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Revenue Trend</h3>
             <div class="mt-4">{{ charts.chart_trend|safe }}</div>
             <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
                 Analysis of daily revenue cycles. Peaks often correlate with logistical surges or marketing campaigns.
@@ -134,6 +135,7 @@
              <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Visual_02 //</span>
             </div>
+            <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Regional Distribution</h3>
             <div class="mt-4">{{ charts.chart_country|safe }}</div>
             <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
                 Geospatial revenue distribution. We are seeing significant traction in high-density urban clusters.
@@ -147,6 +149,7 @@
              <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Intelligence_01 //</span>
             </div>
+             <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Customer Segmentation (RFM)</h3>
              {% if charts.chart_rfm %}
                 <div class="mt-4">{{ charts.chart_rfm|safe }}</div>
                 <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
@@ -162,6 +165,7 @@
             <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Inventory_01 //</span>
             </div>
+            <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Top Product Categories</h3>
             <div class="mt-4">{{ charts.chart_prod|safe }}</div>
             <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
                 Top 10 SKUs by total sales value. These products represent the core of our current inventory velocity.
@@ -175,6 +179,7 @@
              <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Demographics_01 //</span>
             </div>
+             <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Age Demographics</h3>
              {% if charts.chart_age %}
                 <div class="mt-4">{{ charts.chart_age|safe }}</div>
                 <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
@@ -190,6 +195,7 @@
             <div class="absolute top-0 right-0 p-6">
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Logistics_01 //</span>
             </div>
+            <h3 class="text-xl font-heading font-bold text-brand-text mb-2">Returns & Profitability</h3>
             {% if charts.chart_return %}
                 <div class="mt-4">{{ charts.chart_return|safe }}</div>
                 <p class="text-[10px] font-mono text-brand-muted mt-4 uppercase tracking-wider px-2 opacity-60">
