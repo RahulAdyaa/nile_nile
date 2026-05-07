@@ -82,9 +82,11 @@
                 </select>
                 <a id="export-csv-btn"
                    href="{% url 'export_report' 'csv' %}?country={{ selected_country }}&category={{ selected_category }}&start_date={{ start_date }}&end_date={{ end_date }}&preset={{ selected_preset }}&limit=50000"
+                   download="nile_report.csv"
                    class="px-5 py-2 bg-brand-text text-white rounded-lg text-[9px] font-mono font-bold hover:bg-brand-red transition-all uppercase tracking-widest">Export_CSV</a>
                 <a id="export-xlsx-btn"
                    href="{% url 'export_report' 'excel' %}?country={{ selected_country }}&category={{ selected_category }}&start_date={{ start_date }}&end_date={{ end_date }}&preset={{ selected_preset }}&limit=50000"
+                   download="nile_report.xlsx"
                    class="px-5 py-2 tactical-border bg-white text-brand-text rounded-lg text-[9px] font-mono font-bold hover:bg-brand-bg transition-all uppercase tracking-widest">Export_XLSX</a>
             </div>
             <script>
@@ -111,7 +113,7 @@
                 <p class="text-[9px] font-mono uppercase tracking-[0.25em] text-brand-muted mb-2">AI Summary</p>
                 <div class="space-y-1">
                     {% for line in data_narrative %}
-                    <p class="text-sm text-brand-text/80 leading-relaxed">{{ line }}</p>
+                    <p class="text-sm text-brand-text opacity-80 leading-relaxed">{{ line }}</p>
                     {% endfor %}
                 </div>
             </div>

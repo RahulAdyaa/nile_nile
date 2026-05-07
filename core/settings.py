@@ -180,8 +180,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
-CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# ─── AI Analytics (Groq — free open-source LLM) ──────────────────────────────
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 
 # ─── Production Security ──────────────────────────────────────────────────────
 if not DEBUG:

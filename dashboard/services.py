@@ -69,81 +69,235 @@ class AnalyticsService:
 
     @staticmethod
     def generate_csv_report(queryset):
-        # Flatten for export with human-readable headers
+        """Generate a well-formatted CSV with all relevant fields."""
         data = list(queryset.values(
-            'order_id', 'order_date', 'customer__name', 'customer__region', 
+            'order_id', 'order_date',
+            'customer__customer_id', 'customer__name', 'customer__region',
             'customer__city', 'customer__age', 'customer__gender',
-            'product__name', 'product__category', 
-            'quantity', 'unit_price', 'total_sales', 'profit', 
+            'product__product_id', 'product__name', 'product__category', 'product__sub_category',
+            'quantity', 'unit_price', 'discount', 'total_sales', 'profit',
             'shipping_cost', 'delivery_time_days', 'returned', 'payment_mode'
         ))
         df = pd.DataFrame(data)
         if df.empty:
             return None
-        
-        # Rename columns for clarity
+
         column_map = {
             'order_id': 'Order ID',
             'order_date': 'Order Date',
+            'customer__customer_id': 'Customer ID',
             'customer__name': 'Customer Name',
             'customer__region': 'Region',
             'customer__city': 'City',
             'customer__age': 'Age',
             'customer__gender': 'Gender',
+            'product__product_id': 'Product ID',
             'product__name': 'Product Name',
             'product__category': 'Category',
+            'product__sub_category': 'Sub-Category',
             'quantity': 'Quantity',
             'unit_price': 'Unit Price',
+            'discount': 'Discount',
             'total_sales': 'Total Sales',
             'profit': 'Profit',
             'shipping_cost': 'Shipping Cost',
             'delivery_time_days': 'Delivery Days',
             'returned': 'Returned',
-            'payment_mode': 'Payment Mode'
+            'payment_mode': 'Payment Mode',
         }
         df = df.rename(columns=column_map)
-        
+
+        # Format values for readability
+        if 'Order Date' in df.columns:
+            df['Order Date'] = pd.to_datetime(df['Order Date']).dt.strftime('%Y-%m-%d')
+        for col in ['Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').round(2)
+        if 'Returned' in df.columns:
+            df['Returned'] = df['Returned'].map({True: 'Yes', False: 'No', 1: 'Yes', 0: 'No'})
+
         output = io.StringIO()
         df.to_csv(output, index=False)
         return output.getvalue()
 
     @staticmethod
     def generate_excel_report(queryset):
+        """Generate a professionally formatted Excel report with styling and summary."""
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
         data = list(queryset.values(
-            'order_id', 'order_date', 'customer__name', 'customer__region', 
+            'order_id', 'order_date',
+            'customer__customer_id', 'customer__name', 'customer__region',
             'customer__city', 'customer__age', 'customer__gender',
-            'product__name', 'product__category', 
-            'quantity', 'unit_price', 'total_sales', 'profit', 
+            'product__product_id', 'product__name', 'product__category', 'product__sub_category',
+            'quantity', 'unit_price', 'discount', 'total_sales', 'profit',
             'shipping_cost', 'delivery_time_days', 'returned', 'payment_mode'
         ))
         df = pd.DataFrame(data)
         if df.empty:
             return None
-        
+
         column_map = {
             'order_id': 'Order ID',
             'order_date': 'Order Date',
+            'customer__customer_id': 'Customer ID',
             'customer__name': 'Customer Name',
             'customer__region': 'Region',
             'customer__city': 'City',
             'customer__age': 'Age',
             'customer__gender': 'Gender',
+            'product__product_id': 'Product ID',
             'product__name': 'Product Name',
             'product__category': 'Category',
+            'product__sub_category': 'Sub-Category',
             'quantity': 'Quantity',
             'unit_price': 'Unit Price',
+            'discount': 'Discount',
             'total_sales': 'Total Sales',
             'profit': 'Profit',
             'shipping_cost': 'Shipping Cost',
             'delivery_time_days': 'Delivery Days',
             'returned': 'Returned',
-            'payment_mode': 'Payment Mode'
+            'payment_mode': 'Payment Mode',
         }
         df = df.rename(columns=column_map)
-        
+
+        # Format values
+        if 'Order Date' in df.columns:
+            df['Order Date'] = pd.to_datetime(df['Order Date']).dt.strftime('%Y-%m-%d')
+        for col in ['Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').round(2)
+        if 'Returned' in df.columns:
+            df['Returned'] = df['Returned'].map({True: 'Yes', False: 'No', 1: 'Yes', 0: 'No'})
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Sales Report')
+            # ── Sheet 1: Sales Data ──
+            df.to_excel(writer, index=False, sheet_name='Sales Data')
+            ws = writer.sheets['Sales Data']
+
+            # Style definitions
+            header_font = Font(name='Inter', bold=True, color='FFFFFF', size=10)
+            header_fill = PatternFill(start_color='1A1A2E', end_color='1A1A2E', fill_type='solid')
+            header_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            cell_font = Font(name='Inter', size=9)
+            cell_align = Alignment(vertical='center')
+            thin_border = Border(
+                bottom=Side(style='thin', color='E4E4E7')
+            )
+            alt_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
+            currency_cols = {'Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost'}
+
+            # Style header row
+            for col_idx, col_name in enumerate(df.columns, 1):
+                cell = ws.cell(row=1, column=col_idx)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_align
+
+            # Style data rows + auto-width
+            col_widths = {}
+            for col_idx, col_name in enumerate(df.columns, 1):
+                col_widths[col_idx] = len(str(col_name)) + 2  # start with header width
+
+                for row_idx in range(2, len(df) + 2):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.font = cell_font
+                    cell.alignment = cell_align
+                    cell.border = thin_border
+
+                    # Alternating row color
+                    if row_idx % 2 == 0:
+                        cell.fill = alt_fill
+
+                    # Currency format
+                    if col_name in currency_cols and cell.value is not None:
+                        cell.number_format = '#,##0.00'
+
+                    # Track max width
+                    val_len = len(str(cell.value)) if cell.value is not None else 0
+                    col_widths[col_idx] = max(col_widths[col_idx], min(val_len + 2, 35))
+
+            # Apply column widths
+            for col_idx, width in col_widths.items():
+                ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+            # Freeze header row + autofilter
+            ws.freeze_panes = 'A2'
+            ws.auto_filter.ref = ws.dimensions
+
+            # ── Sheet 2: Summary ──
+            summary_data = {
+                'Metric': [
+                    'Total Records',
+                    'Total Revenue',
+                    'Total Profit',
+                    'Profit Margin',
+                    'Avg Order Value',
+                    'Total Quantity Sold',
+                    'Avg Delivery Days',
+                    'Return Rate',
+                    'Unique Customers',
+                    'Unique Products',
+                    'Date Range',
+                    'Top Region',
+                    'Top Category',
+                ],
+                'Value': []
+            }
+            total_rev = df['Total Sales'].sum() if 'Total Sales' in df.columns else 0
+            total_profit = df['Profit'].sum() if 'Profit' in df.columns else 0
+            margin = (total_profit / total_rev * 100) if total_rev > 0 else 0
+            total_qty = df['Quantity'].sum() if 'Quantity' in df.columns else 0
+            avg_delivery = df['Delivery Days'].mean() if 'Delivery Days' in df.columns else 0
+            returned_count = (df['Returned'] == 'Yes').sum() if 'Returned' in df.columns else 0
+            return_rate = (returned_count / len(df) * 100) if len(df) > 0 else 0
+            unique_cust = df['Customer Name'].nunique() if 'Customer Name' in df.columns else 0
+            unique_prod = df['Product Name'].nunique() if 'Product Name' in df.columns else 0
+            date_range = ''
+            if 'Order Date' in df.columns and len(df) > 0:
+                date_range = f"{df['Order Date'].min()} to {df['Order Date'].max()}"
+            top_region = df.groupby('Region')['Total Sales'].sum().idxmax() if 'Region' in df.columns and len(df) > 0 else 'N/A'
+            top_cat = df.groupby('Category')['Total Sales'].sum().idxmax() if 'Category' in df.columns and len(df) > 0 else 'N/A'
+
+            summary_data['Value'] = [
+                f"{len(df):,}",
+                f"${total_rev:,.2f}",
+                f"${total_profit:,.2f}",
+                f"{margin:.1f}%",
+                f"${(total_rev / len(df)):,.2f}" if len(df) > 0 else '$0.00',
+                f"{total_qty:,}",
+                f"{avg_delivery:.1f} days",
+                f"{return_rate:.1f}%",
+                f"{unique_cust:,}",
+                f"{unique_prod:,}",
+                date_range,
+                str(top_region),
+                str(top_cat),
+            ]
+
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, index=False, sheet_name='Summary')
+            ws2 = writer.sheets['Summary']
+
+            # Style summary sheet
+            for col_idx in range(1, 3):
+                cell = ws2.cell(row=1, column=col_idx)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_align
+
+            for row_idx in range(2, len(summary_data['Metric']) + 2):
+                ws2.cell(row=row_idx, column=1).font = Font(name='Inter', bold=True, size=10)
+                ws2.cell(row=row_idx, column=2).font = Font(name='Inter', size=10)
+                ws2.cell(row=row_idx, column=1).alignment = cell_align
+                ws2.cell(row=row_idx, column=2).alignment = cell_align
+
+            ws2.column_dimensions['A'].width = 22
+            ws2.column_dimensions['B'].width = 25
+
         return output.getvalue()
 
 
@@ -505,8 +659,8 @@ class CohortAnalyzer:
         first_purchase = df.groupby('customer_id')['order_month'].min().rename('cohort')
         df = df.merge(first_purchase, on='customer_id')
 
-        # Period number: months since cohort
-        df['period'] = (df['order_month'] - df['cohort']).apply(lambda x: x.n if hasattr(x, 'n') else 0)
+        # Period number: months since cohort — use ordinal subtraction (reliable across pandas versions)
+        df['period'] = df['order_month'].apply(lambda p: p.ordinal) - df['cohort'].apply(lambda p: p.ordinal)
 
         # Cohort table: unique customers per (cohort, period)
         cohort_table = df.groupby(['cohort', 'period'])['customer_id'].nunique().reset_index()
@@ -994,6 +1148,34 @@ class ReportGenerator:
     """
 
     @staticmethod
+    def format_metric(value, prefix='', suffix=''):
+        if value is None:
+            return 'NaN'
+        try:
+            v = float(value)
+        except (ValueError, TypeError):
+            return 'NaN'
+
+        if v == 0:
+            return 'NaN'
+        
+        abs_v = abs(v)
+        if abs_v >= 1_000_000:
+            formatted = f"{abs_v / 1_000_000:.1f}M"
+        elif abs_v >= 1_000:
+            formatted = f"{abs_v / 1_000:.1f}K"
+        else:
+            if abs_v.is_integer():
+                formatted = f"{int(abs_v)}"
+            else:
+                formatted = f"{abs_v:.1f}"
+
+        res = f"{prefix}{formatted}{suffix}"
+        if v < 0:
+            return f"-{res}"
+        return res
+
+    @staticmethod
     def generate(session):
         from django.db.models import Avg, Max, Min
         from django.db.models.functions import TruncMonth
@@ -1063,43 +1245,62 @@ class ReportGenerator:
         return {
             'overview': {
                 'total_revenue': total_rev,
+                'total_revenue_fmt': ReportGenerator.format_metric(total_rev, prefix='$'),
                 'total_profit': total_prof,
+                'total_profit_fmt': ReportGenerator.format_metric(total_prof, prefix='$'),
                 'profit_margin': round(total_prof / total_rev * 100, 1) if total_rev else 0,
+                'profit_margin_fmt': ReportGenerator.format_metric(total_prof / total_rev * 100 if total_rev else 0, suffix='%'),
                 'total_orders': agg['total_orders'],
+                'total_orders_fmt': ReportGenerator.format_metric(agg['total_orders']),
                 'total_units': agg['total_units'],
+                'total_units_fmt': ReportGenerator.format_metric(agg['total_units']),
                 'total_customers': agg['total_customers'],
+                'total_customers_fmt': ReportGenerator.format_metric(agg['total_customers']),
                 'total_products': agg['total_products'],
+                'total_products_fmt': ReportGenerator.format_metric(agg['total_products']),
                 'aov': round(total_rev / agg['total_orders'], 2) if agg['total_orders'] else 0,
+                'aov_fmt': ReportGenerator.format_metric(total_rev / agg['total_orders'] if agg['total_orders'] else 0, prefix='$'),
                 'avg_discount': round(float(agg['avg_discount'] or 0), 1),
                 'avg_delivery': round(float(agg['avg_delivery'] or 0), 1),
                 'return_rate': round(return_rate, 1),
+                'return_rate_fmt': ReportGenerator.format_metric(return_rate, suffix='%'),
                 'date_range': f"{agg['date_min']} — {agg['date_max']}" if agg['date_min'] else 'N/A',
             },
             'top_products': [{
                 'name': p['product__name'],
                 'category': p['product__category'],
                 'revenue': float(p['revenue']),
+                'revenue_fmt': ReportGenerator.format_metric(p['revenue'], prefix='$'),
                 'units': p['units'],
+                'units_fmt': ReportGenerator.format_metric(p['units']),
             } for p in top_products],
             'top_customers': [{
                 'name': c['customer__name'],
                 'region': c['customer__region'],
                 'revenue': float(c['revenue']),
+                'revenue_fmt': ReportGenerator.format_metric(c['revenue'], prefix='$'),
                 'orders': c['orders'],
+                'orders_fmt': ReportGenerator.format_metric(c['orders']),
             } for c in top_customers],
             'by_region': [{
                 'region': r['customer__region'],
                 'revenue': float(r['revenue']),
+                'revenue_fmt': ReportGenerator.format_metric(r['revenue'], prefix='$'),
                 'profit': float(r['profit']),
+                'profit_fmt': ReportGenerator.format_metric(r['profit'], prefix='$'),
             } for r in by_region],
             'by_category': [{
                 'category': c['product__category'],
                 'revenue': float(c['revenue']),
+                'revenue_fmt': ReportGenerator.format_metric(c['revenue'], prefix='$'),
                 'profit': float(c['profit']),
+                'profit_fmt': ReportGenerator.format_metric(c['profit'], prefix='$'),
             } for c in by_category],
             'monthly': [{
                 'month': m['month'].strftime('%Y-%m'),
                 'revenue': float(m['revenue']),
+                'revenue_fmt': ReportGenerator.format_metric(m['revenue'], prefix='$'),
                 'orders': m['orders'],
+                'orders_fmt': ReportGenerator.format_metric(m['orders']),
             } for m in monthly],
         }

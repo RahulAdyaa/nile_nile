@@ -39,6 +39,7 @@
         :root {
             --bg: #FDFDFD;
             --bg-card: #FFFFFF;
+            --bg-card-alt: #FAFAFA;
             --text: #111111;
             --text-muted: #52525B;
             --border: #E4E4E7;
@@ -46,69 +47,294 @@
             --surface: #FAFAFA;
             --hover-bg: rgba(0,0,0,0.02);
             --table-stripe: rgba(250,250,250,0.8);
+            --input-bg: #FFFFFF;
+            --input-border: #E4E4E7;
+            --modal-bg: #FFFFFF;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
             --shadow-hover: 0 20px 25px -5px rgba(230,59,46,0.05), 0 10px 10px -5px rgba(230,59,46,0.03);
         }
         html.dark {
-            --bg: linear-gradient(135deg, #181924 0%, #10111A 100%);
-            --bg-card: rgba(28,30,38,0.82);
+            --bg: #0F1017;
+            --bg-card: rgba(24,26,36,0.88);
+            --bg-card-alt: rgba(20,22,30,0.92);
             --text: #F4F4F5;
-            --text-muted: #B0B3C0;
-            --border: #23243A;
-            --border-light: rgba(80,80,120,0.4);
+            --text-muted: #A1A1AA;
+            --border: rgba(63,63,90,0.45);
+            --border-light: rgba(80,80,120,0.3);
             --surface: rgba(22,24,32,0.85);
             --hover-bg: rgba(255,255,255,0.04);
             --table-stripe: rgba(36,38,48,0.7);
-            --shadow-sm: 0 2px 16px 0 rgba(0,0,0,0.32), 0 1.5px 8px 0 rgba(230,59,46,0.08);
-            --shadow-hover: 0 8px 32px 0 rgba(230,59,46,0.18), 0 2px 12px 0 rgba(0,0,0,0.22);
+            --input-bg: rgba(22,24,34,0.9);
+            --input-border: rgba(63,63,90,0.5);
+            --modal-bg: #1C1E2A;
+            --shadow-sm: 0 2px 16px 0 rgba(0,0,0,0.32), 0 1.5px 8px 0 rgba(230,59,46,0.06);
+            --shadow-hover: 0 8px 32px 0 rgba(230,59,46,0.15), 0 2px 12px 0 rgba(0,0,0,0.22);
             --glass-blur: blur(12px);
         }
 
+        /* ── Base ──────────────────────────────────────────────── */
+        html.dark { background: var(--bg); }
         body {
             background: var(--bg);
             color: var(--text);
             line-height: 1.6;
-            transition: background 0.3s cubic-bezier(0.4,0,0.2,1), color 0.3s cubic-bezier(0.4,0,0.2,1);
+            transition: background 0.35s ease, color 0.35s ease;
         }
         .font-heading { font-family: 'Outfit', sans-serif; }
 
-        /* Dark mode overrides for common elements */
+        /* ── Card surfaces ─────────────────────────────────────── */
         html.dark .bg-white,
         html.dark .bg-zinc-50,
         html.dark .bg-zinc-50\/80,
         html.dark .bg-zinc-50\/60 {
             background: var(--bg-card) !important;
             backdrop-filter: var(--glass-blur);
-            box-shadow: var(--shadow-sm) !important;
-            border: 1.5px solid var(--border) !important;
         }
-        html.dark .border-zinc-200\/60, html.dark .border-zinc-200\/40, html.dark .border-zinc-100 {
+        html.dark .bg-brand-bg,
+        html.dark .bg-brand-bg\/50 {
+            background: var(--bg-card-alt) !important;
+        }
+        html.dark .bg-gray-50,
+        html.dark .bg-gray-100 {
+            background: var(--bg-card-alt) !important;
+        }
+
+        /* ── Borders ───────────────────────────────────────────── */
+        html.dark .border-zinc-200\/60,
+        html.dark .border-zinc-200\/40,
+        html.dark .border-zinc-100,
+        html.dark .border-zinc-200,
+        html.dark .border-brand-border {
             border-color: var(--border) !important;
-            box-shadow: none !important;
         }
+        html.dark .tactical-border { border-color: var(--border) !important; }
+        html.dark .border-b { border-color: var(--border) !important; }
+        html.dark .border-t { border-color: var(--border) !important; }
+        html.dark .border-r { border-color: var(--border) !important; }
+        html.dark .border-l { border-color: var(--border) !important; }
+        html.dark .divide-zinc-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+        html.dark .divide-zinc-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+        html.dark .border-green-200 { border-color: rgba(22,163,74,0.3) !important; }
+        html.dark .border-red-200 { border-color: rgba(230,59,46,0.3) !important; }
+
+        /* ── Text ──────────────────────────────────────────────── */
         html.dark .text-brand-text { color: var(--text) !important; }
         html.dark .text-brand-muted { color: var(--text-muted) !important; }
-        html.dark .divide-zinc-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
-        html.dark .bg-zinc-100 { background-color: #23243A !important; }
-        html.dark .bg-red-50 { background-color: rgba(230,59,46,0.16) !important; }
-        html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.13) !important; }
-        html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.13) !important; }
-        html.dark .bg-green-50 { background-color: rgba(22,163,74,0.13) !important; }
-        html.dark .shadow-sm, html.dark .tactical-glow { box-shadow: var(--shadow-sm) !important; }
-        html.dark .shadow-hover, html.dark .tactical-glow:hover { box-shadow: var(--shadow-hover) !important; }
-        html.dark .border-b { border-color: var(--border) !important; }
-        html.dark .bg-gradient-to-br { background: linear-gradient(135deg, rgba(36,38,48,0.92) 0%, rgba(28,30,38,0.82) 100%) !important; background-image: none !important; }
-        html.dark .hover\:bg-zinc-50\/60:hover { background-color: var(--hover-bg) !important; }
-        html.dark .shadow-sm { box-shadow: var(--shadow-sm) !important; }
-        html.dark .border-b { border-color: var(--border) !important; }
-        html.dark .bg-gradient-to-br { background-image: none !important; background-color: var(--bg-card) !important; }
+        html.dark .text-zinc-600,
+        html.dark .text-zinc-700,
+        html.dark .text-zinc-800,
+        html.dark .text-zinc-900 { color: var(--text) !important; }
+        html.dark .text-zinc-400,
+        html.dark .text-zinc-500,
+        html.dark .text-gray-400,
+        html.dark .text-gray-500,
+        html.dark .text-gray-600 { color: var(--text-muted) !important; }
 
-        /* Dark mode toggle styling */
+        /* ── Backgrounds ───────────────────────────────────────── */
+        html.dark .bg-zinc-100 { background-color: rgba(35,36,58,0.7) !important; }
+        html.dark .bg-zinc-200 { background-color: rgba(40,42,62,0.7) !important; }
+        html.dark .bg-gray-200 { background-color: rgba(40,42,62,0.5) !important; }
+        html.dark .bg-red-50 { background-color: rgba(230,59,46,0.12) !important; }
+        html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.10) !important; }
+        html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.10) !important; }
+        html.dark .bg-green-50 { background-color: rgba(22,163,74,0.10) !important; }
+        html.dark .bg-gradient-to-br { background: var(--bg-card) !important; }
+        html.dark .hover\:bg-zinc-50\/60:hover,
+        html.dark .hover\:bg-zinc-50:hover,
+        html.dark .hover\:bg-gray-50:hover,
+        html.dark .hover\:bg-brand-bg:hover,
+        html.dark .hover\:bg-brand-bg\/50:hover { background-color: var(--hover-bg) !important; }
+
+        /* ── Shadows ───────────────────────────────────────────── */
+        html.dark .shadow-sm,
+        html.dark .tactical-glow { box-shadow: var(--shadow-sm) !important; }
+        html.dark .tactical-glow:hover { box-shadow: var(--shadow-hover) !important; }
+        html.dark .shadow-2xl { box-shadow: 0 4px 40px rgba(0,0,0,0.4) !important; }
+
+        /* ── Form Inputs ───────────────────────────────────────── */
+        html.dark input[type="text"],
+        html.dark input[type="email"],
+        html.dark input[type="password"],
+        html.dark input[type="number"],
+        html.dark input[type="date"],
+        html.dark input[type="search"],
+        html.dark input[type="url"],
+        html.dark input[type="tel"],
+        html.dark textarea {
+            background-color: var(--input-bg) !important;
+            color: var(--text) !important;
+            border-color: var(--input-border) !important;
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(0.8);
+        }
+        html.dark select {
+            background-color: var(--input-bg) !important;
+            color: var(--text) !important;
+            border-color: var(--input-border) !important;
+        }
+        html.dark select option {
+            background-color: #1c1e2a !important;
+            color: var(--text) !important;
+        }
+        html.dark input[type="radio"] {
+            border-color: var(--text-muted) !important;
+        }
+        html.dark input::placeholder,
+        html.dark textarea::placeholder {
+            color: rgba(161,161,170,0.5) !important;
+        }
+        /* Focus rings in dark mode */
+        html.dark input:focus,
+        html.dark select:focus,
+        html.dark textarea:focus {
+            border-color: #E63B2E !important;
+            box-shadow: 0 0 0 2px rgba(230,59,46,0.15) !important;
+        }
+
+        /* ── Modals ────────────────────────────────────────────── */
+        html.dark #session-modal > div,
+        html.dark .modal-content {
+            background: var(--modal-bg) !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 16px 64px rgba(0,0,0,0.5) !important;
+        }
+
+        /* ── Alert Messages ────────────────────────────────────── */
+        html.dark .bg-red-50.text-red-700 {
+            background-color: rgba(230,59,46,0.12) !important;
+            color: #FCA5A5 !important;
+            border-color: rgba(230,59,46,0.3) !important;
+        }
+        html.dark .bg-green-50.text-green-700 {
+            background-color: rgba(22,163,74,0.12) !important;
+            color: #86EFAC !important;
+            border-color: rgba(22,163,74,0.3) !important;
+        }
+
+        /* ── Footer ────────────────────────────────────────────── */
+        html.dark footer,
+        html.dark footer.bg-white {
+            background: var(--bg-card-alt) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* ── Table Rows ────────────────────────────────────────── */
+        html.dark tbody tr:hover { background: var(--hover-bg) !important; }
+        html.dark thead tr { background: var(--bg-card-alt) !important; }
+
+        /* ── Scrollbars (non-sidebar) ──────────────────────────── */
+        html.dark ::-webkit-scrollbar { width: 8px; height: 8px; }
+        html.dark ::-webkit-scrollbar-track { background: var(--bg); }
+        html.dark ::-webkit-scrollbar-thumb { background: rgba(161,161,170,0.2); border-radius: 4px; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background: rgba(161,161,170,0.35); }
+
+        /* ── Plotly Charts (text/axes in dark mode) ─────────────── */
+        html.dark .js-plotly-plot .plotly .gtitle,
+        html.dark .js-plotly-plot .plotly .xtitle,
+        html.dark .js-plotly-plot .plotly .ytitle { fill: var(--text-muted) !important; }
+        html.dark .js-plotly-plot .plotly .xtick text,
+        html.dark .js-plotly-plot .plotly .ytick text { fill: var(--text-muted) !important; }
+        html.dark .js-plotly-plot .plotly .legend text { fill: var(--text-muted) !important; }
+        html.dark .js-plotly-plot .plotly .annotation-text { fill: var(--text) !important; }
+        html.dark .js-plotly-plot .hoverlayer .hovertext rect { fill: #1c1e2a !important; stroke: var(--border) !important; }
+        html.dark .js-plotly-plot .hoverlayer .hovertext text { fill: var(--text) !important; }
+        html.dark .js-plotly-plot .plotly .xgrid line,
+        html.dark .js-plotly-plot .plotly .ygrid line { stroke: rgba(161,161,170,0.12) !important; }
+        html.dark .js-plotly-plot .plotly .xlines line,
+        html.dark .js-plotly-plot .plotly .ylines line { stroke: rgba(161,161,170,0.15) !important; }
+        /* Plotly indicator/number text */
+        html.dark .js-plotly-plot .plotly .indicator text,
+        html.dark .js-plotly-plot .plotly .numbers text { fill: var(--text) !important; }
+        /* Plotly subplot titles */
+        html.dark .js-plotly-plot .plotly .g-gtitle text { fill: var(--text) !important; }
+        /* Plotly legend background */
+        html.dark .js-plotly-plot .plotly .legend rect.bg { fill: rgba(28,30,42,0.85) !important; stroke: var(--border) !important; }
+        /* Plotly modebar (toolbar) */
+        html.dark .js-plotly-plot .plotly .modebar-container { background: transparent !important; }
+        html.dark .js-plotly-plot .plotly .modebar-btn path { fill: var(--text-muted) !important; }
+        html.dark .js-plotly-plot .plotly .modebar-btn:hover path { fill: var(--text) !important; }
+        /* Plotly table header and cells */
+        html.dark .js-plotly-plot .plotly .table .thead .cell rect { fill: #1c1e2a !important; }
+        html.dark .js-plotly-plot .plotly .table .thead .cell text { fill: var(--text) !important; }
+        html.dark .js-plotly-plot .plotly .table .tbody .cell rect { fill: var(--bg-card) !important; }
+        html.dark .js-plotly-plot .plotly .table .tbody .cell text { fill: var(--text-muted) !important; }
+        html.dark .js-plotly-plot .plotly .table .cell .line { stroke: var(--border) !important; }
+
+        /* ── Source Switcher Tabs (control center) ──────────────── */
+        html.dark .bg-brand-bg.tactical-border { background: var(--bg-card-alt) !important; }
+
+        /* ── Skeleton Loader ───────────────────────────────────── */
+        html.dark .animate-pulse .bg-gray-200,
+        html.dark .animate-pulse > div { background: rgba(40,42,62,0.5) !important; }
+
+        /* ── Drop Zone ─────────────────────────────────────────── */
+        html.dark #drop-zone {
+            border-color: var(--border) !important;
+            background: var(--bg-card) !important;
+        }
+        html.dark #drop-zone:hover {
+            background: var(--hover-bg) !important;
+            border-color: #E63B2E !important;
+        }
+
+        /* ── Loading / Spinner Overlays ─────────────────────────── */
+        html.dark .bg-white\/40,
+        html.dark .bg-white\/90 {
+            background: rgba(15,16,23,0.6) !important;
+        }
+        html.dark .bg-white\/90.backdrop-blur-md {
+            background: rgba(28,30,42,0.92) !important;
+        }
+
+        /* ── Gradient Cards (AI Summary, etc.) ─────────────────── */
+        html.dark .bg-gradient-to-r.from-zinc-50 {
+            background: var(--bg-card) !important;
+        }
+
+        /* ── Table Hover (gray-50 variants) ────────────────────── */
+        html.dark .hover\:bg-gray-50\/50:hover {
+            background: var(--hover-bg) !important;
+        }
+
+        /* ── Misc Color Borders ────────────────────────────────── */
+        html.dark .border-red-100 { border-color: rgba(230,59,46,0.25) !important; }
+        html.dark .border-zinc-300 { border-color: var(--border) !important; }
+
+        /* ── Whatif / Anomaly inline styles ─────────────────────── */
+        html.dark .sim-card,
+        html.dark .assoc-card,
+        html.dark .cohort-card,
+        html.dark .clv-card,
+        html.dark .chart-card,
+        html.dark .report-card {
+            background: var(--bg-card) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* ── Print styles: force light for printing ────────────── */
+        @media print {
+            html.dark {
+                --bg: #FFFFFF; --bg-card: #FFFFFF; --bg-card-alt: #F9F9F9;
+                --text: #111; --text-muted: #52525B; --border: #E4E4E7;
+                --input-bg: #fff; --input-border: #ddd;
+            }
+            .sidebar, #sidebar, #sidebar-expand-btn, .mobile-topbar,
+            [id="sidebar-overlay"], .no-print, .dark-toggle { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 20px !important; background: white !important; }
+            body, html { background: white !important; color: #111 !important; }
+            .bg-white, .bg-zinc-50, .bg-zinc-50\/80, .bg-gray-50,
+            .report-card, .sim-card, .chart-card { background: white !important; }
+            .tactical-glow:hover { transform: none !important; box-shadow: none !important; }
+            .shadow-sm, .shadow-md, .shadow-2xl { box-shadow: none !important; }
+        }
+
         .dark-toggle { cursor: pointer; position: relative; width: 36px; height: 20px; border-radius: 99px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
         .dark-toggle .toggle-dot { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #A1A1AA; transition: transform 0.3s, background 0.3s; }
         html.dark .dark-toggle { background: rgba(230,59,46,0.3); }
         html.dark .dark-toggle .toggle-dot { transform: translateX(16px); background: #E63B2E; }
 
+        /* ── Core Layout ───────────────────────────────────────── */
         .tactical-border { border: 1px solid var(--border); }
         .tactical-glow { box-shadow: var(--shadow-sm); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
         .tactical-glow:hover { 
@@ -127,7 +353,7 @@
             border-right: 1.5px solid var(--border);
         }
         html.dark .sidebar {
-            background: linear-gradient(135deg, rgba(18,20,28,0.96) 0%, rgba(28,30,38,0.92) 100%);
+            background: linear-gradient(135deg, rgba(14,16,22,0.98) 0%, rgba(20,22,30,0.95) 100%);
             box-shadow: 12px 0 48px rgba(0,0,0,0.45), 0 0 0 1.5px var(--border);
             border-right: 1.5px solid var(--border);
             backdrop-filter: blur(18px) saturate(1.2);
@@ -175,7 +401,7 @@
             transition: margin-left 0.35s cubic-bezier(0.23, 1, 0.32, 1);
         }
         html.dark .main-content {
-            background: linear-gradient(135deg, #181924 0%, #10111A 100%);
+            background: var(--bg);
             min-height: 100vh;
         }
     </style>
@@ -247,6 +473,12 @@
             <!-- Section: Analytics -->
             <p class="sidebar-section-title text-[9px] font-mono uppercase tracking-[0.25em] text-white/20 px-3 mb-2 mt-5">Analytics</p>
 
+            <a href="{% url 'ask_data' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'ask_data' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>
+                <span class="nav-label">Ask Your Data</span>
+                <span class="tooltip-text">AI Analytics</span>
+            </a>
+
             <a href="{% url 'graphs' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'graphs' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 <span class="nav-label">Graphs</span>
@@ -302,6 +534,12 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 <span class="nav-label">Tasks</span>
                 <span class="tooltip-text">Tasks</span>
+            </a>
+
+            <a href="{% url 'cron_jobs' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'cron_jobs' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="nav-label">Cron Jobs</span>
+                <span class="tooltip-text">Scheduled Tasks</span>
             </a>
 
             <a href="{% url 'audit_log' %}" class="nav-item relative flex items-center space-x-3 px-3 py-2.5 text-sm font-medium {% if request.resolver_match.url_name == 'audit_log' %}active-item{% else %}text-white/50 hover:text-white/90 hover:bg-white/[0.04]{% endif %}">

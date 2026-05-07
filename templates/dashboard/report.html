@@ -9,12 +9,84 @@
     .report-card.visible { opacity: 1; transform: translateY(0); }
 
     @media print {
+        /* ── Hide UI chrome ─────────────────────────────────── */
         .sidebar, .no-print, #sidebar, #sidebar-expand-btn, .mobile-topbar,
-        [id="sidebar-overlay"] { display: none !important; }
-        .main-content { margin-left: 0 !important; }
-        body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .report-card { opacity: 1 !important; transform: none !important; }
+        [id="sidebar-overlay"], footer, .footer { display: none !important; }
+        .main-content { margin-left: 0 !important; padding: 0 !important; }
+
+        /* ── Page setup ─────────────────────────────────────── */
+        @page { margin: 1.5cm 1.2cm; size: A4; }
+        html, body {
+            background: white !important;
+            color: #111111 !important;
+            font-size: 11px !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ── Force light mode (override dark mode vars) ───── */
+        html.dark { --bg: #fff !important; --bg-card: #fff !important; --text: #111 !important; --text-muted: #555 !important; --border: #ddd !important; }
+
+        /* ── Cards ──────────────────────────────────────────── */
+        .report-card {
+            opacity: 1 !important;
+            transform: none !important;
+            background: white !important;
+            color: #111 !important;
+            border: 1px solid #ddd !important;
+            box-shadow: none !important;
+            break-inside: avoid;
+            margin-bottom: 8px !important;
+        }
+
+        /* ── Tables ─────────────────────────────────────────── */
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+        }
+        thead tr {
+            background: #f5f5f5 !important;
+        }
+        th, td {
+            padding: 6px 10px !important;
+            border-bottom: 1px solid #e0e0e0 !important;
+            color: #111 !important;
+            text-align: left !important;
+        }
+        th {
+            font-weight: 700 !important;
+            color: #333 !important;
+            font-size: 9px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        tbody tr:hover { background: transparent !important; }
+
+        /* ── Typography ─────────────────────────────────────── */
+        h1, h2, h3, .font-heading { color: #111 !important; }
+        .text-brand-red { color: #c0392b !important; }
+        .text-brand-muted { color: #555 !important; }
+        .text-brand-text { color: #111 !important; }
+        .text-green-600 { color: #16a34a !important; }
+        .text-red-500 { color: #dc2626 !important; }
+
+        /* ── Grid layout for print ──────────────────────────── */
+        .grid { display: grid !important; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+        .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+        .md\:grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+        .gap-4 { gap: 8px !important; }
+        .gap-6 { gap: 12px !important; }
+
+        /* ── Page breaks ────────────────────────────────────── */
         .page-break { page-break-before: always; }
+        .rounded-2xl { break-inside: avoid; }
+
+        /* ── Misc ───────────────────────────────────────────── */
+        a { text-decoration: none !important; color: #111 !important; }
+        .animate-pulse { animation: none !important; }
+        .shadow-sm, .shadow-md { box-shadow: none !important; }
     }
 </style>
 
@@ -45,34 +117,34 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Total Revenue</div>
-            <div class="text-2xl font-heading font-extrabold text-brand-red">${{ report.overview.total_revenue|floatformat:0 }}</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-red">{{ report.overview.total_revenue_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Total Profit</div>
-            <div class="text-2xl font-heading font-extrabold text-brand-text">${{ report.overview.total_profit|floatformat:0 }}</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-text">{{ report.overview.total_profit_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Total Orders</div>
-            <div class="text-2xl font-heading font-extrabold text-brand-text">{{ report.overview.total_orders }}</div>
+            <div class="text-2xl font-heading font-extrabold text-brand-text">{{ report.overview.total_orders_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Profit Margin</div>
-            <div class="text-2xl font-heading font-extrabold text-green-600">{{ report.overview.profit_margin }}%</div>
+            <div class="text-2xl font-heading font-extrabold text-green-600">{{ report.overview.profit_margin_fmt }}</div>
         </div>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Customers</div>
-            <div class="text-xl font-heading font-extrabold text-brand-text">{{ report.overview.total_customers }}</div>
+            <div class="text-xl font-heading font-extrabold text-brand-text">{{ report.overview.total_customers_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Avg Order Value</div>
-            <div class="text-xl font-heading font-extrabold text-brand-text">${{ report.overview.aov|floatformat:0 }}</div>
+            <div class="text-xl font-heading font-extrabold text-brand-text">{{ report.overview.aov_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Return Rate</div>
-            <div class="text-xl font-heading font-extrabold {% if report.overview.return_rate > 10 %}text-red-500{% else %}text-brand-text{% endif %}">{{ report.overview.return_rate }}%</div>
+            <div class="text-xl font-heading font-extrabold {% if report.overview.return_rate > 10 %}text-red-500{% else %}text-brand-text{% endif %}">{{ report.overview.return_rate_fmt }}</div>
         </div>
         <div class="report-card bg-white rounded-xl border border-zinc-200/60 px-5 py-4 shadow-sm">
             <div class="text-[10px] font-mono text-brand-muted uppercase tracking-wider mb-1">Avg Delivery</div>
@@ -102,8 +174,8 @@
                         <tr class="hover:bg-zinc-50/60 transition-colors">
                             <td class="px-5 py-2.5 text-brand-muted font-mono text-xs">{{ forloop.counter }}</td>
                             <td class="px-5 py-2.5 font-medium text-brand-text text-xs">{{ p.name }}</td>
-                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">${{ p.revenue|floatformat:0 }}</td>
-                            <td class="px-5 py-2.5 text-brand-muted text-xs">{{ p.units }}</td>
+                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">{{ p.revenue_fmt }}</td>
+                            <td class="px-5 py-2.5 text-brand-muted text-xs">{{ p.units_fmt }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -131,8 +203,8 @@
                         <tr class="hover:bg-zinc-50/60 transition-colors">
                             <td class="px-5 py-2.5 text-brand-muted font-mono text-xs">{{ forloop.counter }}</td>
                             <td class="px-5 py-2.5 font-medium text-brand-text text-xs">{{ c.name }}</td>
-                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">${{ c.revenue|floatformat:0 }}</td>
-                            <td class="px-5 py-2.5 text-brand-muted text-xs">{{ c.orders }}</td>
+                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">{{ c.revenue_fmt }}</td>
+                            <td class="px-5 py-2.5 text-brand-muted text-xs">{{ c.orders_fmt }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -163,8 +235,8 @@
                         {% for r in report.by_region %}
                         <tr class="hover:bg-zinc-50/60 transition-colors">
                             <td class="px-5 py-2.5 font-medium text-brand-text text-xs">{{ r.region }}</td>
-                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">${{ r.revenue|floatformat:0 }}</td>
-                            <td class="px-5 py-2.5 {% if r.profit >= 0 %}text-green-600{% else %}text-red-500{% endif %} text-xs">${{ r.profit|floatformat:0 }}</td>
+                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">{{ r.revenue_fmt }}</td>
+                            <td class="px-5 py-2.5 {% if r.profit >= 0 %}text-green-600{% else %}text-red-500{% endif %} text-xs">{{ r.profit_fmt }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -190,8 +262,8 @@
                         {% for c in report.by_category %}
                         <tr class="hover:bg-zinc-50/60 transition-colors">
                             <td class="px-5 py-2.5 font-medium text-brand-text text-xs">{{ c.category }}</td>
-                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">${{ c.revenue|floatformat:0 }}</td>
-                            <td class="px-5 py-2.5 {% if c.profit >= 0 %}text-green-600{% else %}text-red-500{% endif %} text-xs">${{ c.profit|floatformat:0 }}</td>
+                            <td class="px-5 py-2.5 text-brand-red font-semibold text-xs">{{ c.revenue_fmt }}</td>
+                            <td class="px-5 py-2.5 {% if c.profit >= 0 %}text-green-600{% else %}text-red-500{% endif %} text-xs">{{ c.profit_fmt }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -218,8 +290,8 @@
                     {% for m in report.monthly %}
                     <tr class="hover:bg-zinc-50/60 transition-colors">
                         <td class="px-5 py-2.5 font-mono text-xs text-brand-text">{{ m.month }}</td>
-                        <td class="px-5 py-2.5 font-semibold text-brand-red text-xs">${{ m.revenue|floatformat:0 }}</td>
-                        <td class="px-5 py-2.5 text-brand-muted text-xs">{{ m.orders }}</td>
+                        <td class="px-5 py-2.5 font-semibold text-brand-red text-xs">{{ m.revenue_fmt }}</td>
+                        <td class="px-5 py-2.5 text-brand-muted text-xs">{{ m.orders_fmt }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

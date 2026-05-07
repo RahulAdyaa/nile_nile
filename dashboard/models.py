@@ -195,3 +195,54 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.get_action_display()} by {self.user}"
+
+
+# ─── Cron Job Execution Log ──────────────────────────────────────────────────
+class CronLog(models.Model):
+    STATUS_SUCCESS = 'success'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = [
+        (STATUS_SUCCESS, 'Success'),
+        (STATUS_FAILED, 'Failed'),
+    ]
+
+    task_name = models.CharField(max_length=100, db_index=True)
+    task_label = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    result = models.TextField(blank=True, default='')
+    duration_ms = models.IntegerField(default=0)
+    executed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-executed_at']
+
+    def __str__(self):
+        icon = '✓' if self.status == self.STATUS_SUCCESS else '✗'
+        return f"[{icon}] {self.task_label or self.task_name} at {self.executed_at:%Y-%m-%d %H:%M}"
+
+
+# ─── AI Chat History (Ask Your Data) ─────────────────────────────────────────
+
+class ChatMessage(models.Model):
+    """Persists Ask Your Data conversation per AnalysisSession."""
+    ROLE_USER = 'user'
+    ROLE_AI = 'ai'
+    ROLE_CHOICES = [
+        (ROLE_USER, 'User'),
+        (ROLE_AI, 'AI'),
+    ]
+
+    session = models.ForeignKey(
+        AnalysisSession, on_delete=models.CASCADE, related_name='chat_messages'
+    )
+    role = models.CharField(max_length=5, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:60]}..."
+
+

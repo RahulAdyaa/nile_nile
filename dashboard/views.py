@@ -390,57 +390,94 @@ def generate_charts(queryset, session=None):
             yaxis={**axis_y, 'title': 'Profit ($)', 'tickprefix': '$', 'tickformat': ','},
         )
 
-    # ── 4. RFM Segments ──────────────────────────────────────────────────
-    rfm_cache_key = "rfm_chart_html"
-    rfm_html = cache.get(rfm_cache_key)
-    if rfm_html is None:
-        rfm_df = AnalyticsService.get_rfm_segments(session=session)
-        if not rfm_df.empty:
-            segment_counts = rfm_df['segment'].value_counts().reset_index()
-            segment_counts.columns = ['segment', 'count']
-            segment_counts = segment_counts.sort_values('count', ascending=False)
+    # ── 4. RFM Segments (filter-aware) ───────────────────────────────────
+    # Build RFM directly from the filtered queryset so customer counts
+    # react to category / region / date-range changes.
+    rfm_html = ""
+    rfm_qs = queryset.values(
+        'customer_id', 'order_id', 'order_date', 'total_sales'
+    )
+    rfm_df = pd.DataFrame(list(rfm_qs))
+    if not rfm_df.empty:
+        now = pd.to_datetime(rfm_df['order_date'].max()) + pd.Timedelta(days=1)
+        rfm_df['order_date'] = pd.to_datetime(rfm_df['order_date'])
 
-            labels = segment_counts['segment'].tolist()
-            values = [int(v) for v in segment_counts['count'].tolist()]
-            total_customers = sum(values)
+        rfm = rfm_df.groupby('customer_id').agg({
+            'order_date': lambda x: (now - x.max()).days,
+            'order_id': 'nunique',
+            'total_sales': 'sum'
+        }).rename(columns={
+            'order_date': 'recency',
+            'order_id': 'frequency',
+            'total_sales': 'monetary'
+        })
 
-            seg_palette = {
-                'Champions': '#10B981', 'Loyal Customers': '#34D399',
-                'Potential Loyalists': '#6EE7B7', 'New Customers': '#3B82F6',
-                'At Risk': '#F59E0B', "Can't Lose Them": '#EF4444',
-                'Lost': '#18181B', 'Others': '#A1A1AA',
-            }
-            colors = [seg_palette.get(s, '#D4D4D8') for s in labels]
+        try:
+            rfm['r_score'] = pd.qcut(rfm['recency'].rank(method='first'), 5, labels=[5, 4, 3, 2, 1])
+            rfm['f_score'] = pd.qcut(rfm['frequency'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
+            rfm['m_score'] = pd.qcut(rfm['monetary'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
+        except ValueError:
+            rfm['r_score'] = 3
+            rfm['f_score'] = 3
+            rfm['m_score'] = 3
 
-            fig_rfm = go.Figure(data=[go.Pie(
-                labels=labels, values=values, hole=0.62,
-                name='Segments',
-                textinfo='label+percent', textposition='inside',
-                textfont=dict(size=11, color='white', family=_font),
-                insidetextorientation='radial',
-                pull=[0.04 if i == 0 else 0 for i in range(len(labels))],
-                marker=dict(colors=colors, line=dict(color='white', width=2.5)),
-                hovertemplate='<b>%{label}</b><br>%{value:,} customers<br>%{percent}<extra></extra>',
-                sort=False,
-            )])
-            fig_rfm.update_layout(
-                **layout_base, showlegend=True,
-                legend=dict(
-                    orientation='h', yanchor='top', y=-0.05, xanchor='center', x=0.5,
-                    font=dict(size=11, family=_font, color=_muted),
-                    bgcolor='rgba(0,0,0,0)',
-                ),
-                annotations=[dict(
-                    text=f'<b>{total_customers:,}</b><br><span style="font-size:10px;color:{_muted}">Customers</span>',
-                    x=0.5, y=0.5,
-                    font=dict(size=26, family=_heading, color=_text),
-                    showarrow=False,
-                )],
-            )
-            rfm_html = pio.to_html(fig_rfm, full_html=False, include_plotlyjs=False)
-        else:
-            rfm_html = ""
-        cache.set(rfm_cache_key, rfm_html, timeout=300)
+        rfm['rfm_score'] = rfm['r_score'].astype(str) + rfm['f_score'].astype(str) + rfm['m_score'].astype(str)
+
+        def segment_it(row):
+            score = row['rfm_score']
+            if score in ['555', '554', '545', '455', '454', '544', '445']: return 'Champions'
+            if score[0] >= '4' and score[1] >= '4': return 'Loyal Customers'
+            if score[0] >= '4' and score[2] >= '4': return 'Potential Loyalists'
+            if score[0] >= '4': return 'New Customers'
+            if score[0] == '3' and score[2] >= '3': return 'At Risk'
+            if score[0] <= '2' and score[2] >= '4': return "Can't Lose Them"
+            if score[0] <= '2' and score[1] <= '2': return 'Lost'
+            return 'Others'
+
+        rfm['segment'] = rfm.apply(segment_it, axis=1)
+
+        segment_counts = rfm['segment'].value_counts().reset_index()
+        segment_counts.columns = ['segment', 'count']
+        segment_counts = segment_counts.sort_values('count', ascending=False)
+
+        labels = segment_counts['segment'].tolist()
+        values = [int(v) for v in segment_counts['count'].tolist()]
+        total_customers = sum(values)
+
+        seg_palette = {
+            'Champions': '#10B981', 'Loyal Customers': '#34D399',
+            'Potential Loyalists': '#6EE7B7', 'New Customers': '#3B82F6',
+            'At Risk': '#F59E0B', "Can't Lose Them": '#EF4444',
+            'Lost': '#18181B', 'Others': '#A1A1AA',
+        }
+        colors = [seg_palette.get(s, '#D4D4D8') for s in labels]
+
+        fig_rfm = go.Figure(data=[go.Pie(
+            labels=labels, values=values, hole=0.62,
+            name='Segments',
+            textinfo='label+percent', textposition='inside',
+            textfont=dict(size=11, color='white', family=_font),
+            insidetextorientation='radial',
+            pull=[0.04 if i == 0 else 0 for i in range(len(labels))],
+            marker=dict(colors=colors, line=dict(color='white', width=2.5)),
+            hovertemplate='<b>%{label}</b><br>%{value:,} customers<br>%{percent}<extra></extra>',
+            sort=False,
+        )])
+        fig_rfm.update_layout(
+            **layout_base, showlegend=True,
+            legend=dict(
+                orientation='h', yanchor='top', y=-0.05, xanchor='center', x=0.5,
+                font=dict(size=11, family=_font, color=_muted),
+                bgcolor='rgba(0,0,0,0)',
+            ),
+            annotations=[dict(
+                text=f'<b>{total_customers:,}</b><br><span style="font-size:10px;color:{_muted}">Customers</span>',
+                x=0.5, y=0.5,
+                font=dict(size=26, family=_heading, color=_text),
+                showarrow=False,
+            )],
+        )
+        rfm_html = pio.to_html(fig_rfm, full_html=False, include_plotlyjs=False)
 
     # ── 5. Forecasting ───────────────────────────────────────────────────
     forecast_cache_key = "forecast_chart_html_v2"
@@ -567,6 +604,11 @@ def dashboard_home(request):
 
 @login_required
 def export_report(request, format):
+    """Export filtered sales data as CSV or Excel."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    export_format = format  # avoid shadowing builtin
     country = request.GET.get('country')
     category = request.GET.get('category')
     start_date = request.GET.get('start_date')
@@ -578,11 +620,11 @@ def export_report(request, format):
         EXPORT_LIMIT = 50000
 
     active_session = AnalysisSession.get_active_session(request.user)
-    if active_session:
-        sales = Sale.objects.filter(session=active_session)
-    else:
+    if not active_session:
         messages.error(request, "No active session. Upload data first.")
         return redirect('dashboard_home')
+
+    sales = Sale.objects.filter(session=active_session)
     if country and country != 'All':
         sales = sales.filter(customer__region=country)
     if category and category != 'All':
@@ -595,14 +637,19 @@ def export_report(request, format):
     sales = sales.order_by('-order_date')[:EXPORT_LIMIT]
 
     from .services import AnalyticsService
-    if format == 'csv':
-        content = AnalyticsService.generate_csv_report(sales)
-        filename = f"nile_report_{timezone.now():%Y%m%d}.csv"
-        content_type = 'text/csv'
-    else:
-        content = AnalyticsService.generate_excel_report(sales)
-        filename = f"nile_report_{timezone.now():%Y%m%d}.xlsx"
-        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    try:
+        if export_format == 'csv':
+            content = AnalyticsService.generate_csv_report(sales)
+            filename = f"nile_report_{timezone.now():%Y%m%d}.csv"
+            content_type = 'text/csv; charset=utf-8'
+        else:
+            content = AnalyticsService.generate_excel_report(sales)
+            filename = f"nile_report_{timezone.now():%Y%m%d}.xlsx"
+            content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    except Exception as e:
+        logger.exception(f"Export generation failed: {e}")
+        messages.error(request, f"Export failed: {str(e)}")
+        return redirect('dashboard_home')
 
     if not content:
         messages.error(request, "No data available to export.")
@@ -610,6 +657,9 @@ def export_report(request, format):
 
     response = HttpResponse(content, content_type=content_type)
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    # Ensure the browser treats this as a download, not a page navigation
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
 
 
@@ -1150,6 +1200,134 @@ def task_monitor(request):
     return render(request, 'dashboard/task_monitor.html', {
         'tasks': tasks,
     })
+
+
+@login_required
+def cron_jobs(request):
+    """Cron Jobs monitoring page — shows all scheduled tasks and their execution history."""
+    from .models import CronLog
+    from core.celery import app
+    from dashboard.apps import CRON_LABELS
+
+    schedule = app.conf.beat_schedule or {}
+
+    # Build enriched list of cron jobs
+    jobs = []
+    for key, entry in schedule.items():
+        sched = entry['schedule']
+        label = CRON_LABELS.get(key, key)
+
+        # Build human-readable schedule string
+        if hasattr(sched, '_orig_hour'):
+            h = str(sched._orig_hour)
+            m = str(sched._orig_minute)
+            dow = str(sched._orig_day_of_week)
+
+            if dow != '*':
+                sched_str = f"{dow.capitalize()} at {h}:{m.zfill(2)}"
+            elif h.startswith('*/'):
+                sched_str = f"Every {h[2:]}h at :{m.zfill(2)}"
+            else:
+                sched_str = f"Daily at {h}:{m.zfill(2)}"
+        elif isinstance(sched, (int, float)):
+            mins = int(sched) // 60
+            if mins >= 60:
+                sched_str = f"Every {mins // 60}h {mins % 60}m"
+            else:
+                sched_str = f"Every {mins} min"
+        else:
+            sched_str = str(sched)
+
+        # Get last execution from CronLog
+        last_log = CronLog.objects.filter(task_name=key).first()
+
+        jobs.append({
+            'key': key,
+            'label': label,
+            'task_path': entry['task'],
+            'schedule': sched_str,
+            'last_run': last_log,
+        })
+
+    # Recent execution logs (all tasks, last 50)
+    recent_logs = CronLog.objects.all()[:50]
+
+    # Stats
+    total_runs = CronLog.objects.count()
+    success_runs = CronLog.objects.filter(status='success').count()
+    failed_runs = CronLog.objects.filter(status='failed').count()
+
+    return render(request, 'dashboard/cron_jobs.html', {
+        'jobs': jobs,
+        'recent_logs': recent_logs,
+        'total_runs': total_runs,
+        'success_runs': success_runs,
+        'failed_runs': failed_runs,
+    })
+
+
+@login_required
+def ask_data(request):
+    """AI-powered natural language analytics — 'Ask Your Data' chat interface."""
+    from .ai_service import AIAnalyticsService
+    from .models import ChatMessage
+
+    session = AnalysisSession.get_active_session(request.user)
+    has_data = session and Sale.objects.filter(session=session).exists()
+
+    if request.method == 'POST':
+        import json as _json
+        try:
+            body = _json.loads(request.body)
+            question = body.get('question', '').strip()
+        except (ValueError, KeyError):
+            question = request.POST.get('question', '').strip()
+
+        if not question:
+            return JsonResponse({'answer': '⚠️ Please enter a question.'})
+
+        if not has_data:
+            return JsonResponse({'answer': 'No data loaded. Please upload a dataset first.'})
+
+        answer = AIAnalyticsService.ask(question, session)
+
+        # Persist both the question and answer to the database
+        if session:
+            ChatMessage.objects.create(session=session, role='user', content=question)
+            ChatMessage.objects.create(session=session, role='ai', content=answer)
+
+        return JsonResponse({'answer': answer})
+
+    # GET — load chat history from the database
+    chat_history = []
+    if session:
+        chat_history = list(
+            ChatMessage.objects.filter(session=session)
+            .order_by('created_at')
+            .values('role', 'content')
+        )
+
+    return render(request, 'dashboard/ask_data.html', {
+        'suggested_questions': AIAnalyticsService.SUGGESTED_QUESTIONS,
+        'has_data': has_data,
+        'active_session': session,
+        'chat_history': json.dumps(chat_history),
+    })
+
+
+@login_required
+def clear_chat(request):
+    """Clear all chat messages for the active session."""
+    from .models import ChatMessage
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    session = AnalysisSession.get_active_session(request.user)
+    if session:
+        ChatMessage.objects.filter(session=session).delete()
+
+    return JsonResponse({'status': 'ok'})
 
 
 @login_required
