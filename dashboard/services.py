@@ -122,9 +122,10 @@ class AnalyticsService:
 
     @staticmethod
     def generate_excel_report(queryset):
-        """Generate a professionally formatted Excel report with styling and summary."""
+        """Generate a full analytics Excel report with charts on every sheet."""
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         from openpyxl.utils import get_column_letter
+        from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 
         data = list(queryset.values(
             'order_id', 'order_date',
@@ -139,31 +140,19 @@ class AnalyticsService:
             return None
 
         column_map = {
-            'order_id': 'Order ID',
-            'order_date': 'Order Date',
-            'customer__customer_id': 'Customer ID',
-            'customer__name': 'Customer Name',
-            'customer__region': 'Region',
-            'customer__city': 'City',
-            'customer__age': 'Age',
-            'customer__gender': 'Gender',
-            'product__product_id': 'Product ID',
-            'product__name': 'Product Name',
-            'product__category': 'Category',
-            'product__sub_category': 'Sub-Category',
-            'quantity': 'Quantity',
-            'unit_price': 'Unit Price',
-            'discount': 'Discount',
-            'total_sales': 'Total Sales',
-            'profit': 'Profit',
-            'shipping_cost': 'Shipping Cost',
-            'delivery_time_days': 'Delivery Days',
-            'returned': 'Returned',
-            'payment_mode': 'Payment Mode',
+            'order_id': 'Order ID', 'order_date': 'Order Date',
+            'customer__customer_id': 'Customer ID', 'customer__name': 'Customer Name',
+            'customer__region': 'Region', 'customer__city': 'City',
+            'customer__age': 'Age', 'customer__gender': 'Gender',
+            'product__product_id': 'Product ID', 'product__name': 'Product Name',
+            'product__category': 'Category', 'product__sub_category': 'Sub-Category',
+            'quantity': 'Quantity', 'unit_price': 'Unit Price', 'discount': 'Discount',
+            'total_sales': 'Total Sales', 'profit': 'Profit',
+            'shipping_cost': 'Shipping Cost', 'delivery_time_days': 'Delivery Days',
+            'returned': 'Returned', 'payment_mode': 'Payment Mode',
         }
         df = df.rename(columns=column_map)
 
-        # Format values
         if 'Order Date' in df.columns:
             df['Order Date'] = pd.to_datetime(df['Order Date']).dt.strftime('%Y-%m-%d')
         for col in ['Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost']:
@@ -172,131 +161,212 @@ class AnalyticsService:
         if 'Returned' in df.columns:
             df['Returned'] = df['Returned'].map({True: 'Yes', False: 'No', 1: 'Yes', 0: 'No'})
 
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # ── Sheet 1: Sales Data ──
-            df.to_excel(writer, index=False, sheet_name='Sales Data')
-            ws = writer.sheets['Sales Data']
+        # ── Reusable style helpers ──
+        hdr_font = Font(name='Inter', bold=True, color='FFFFFF', size=10)
+        hdr_fill = PatternFill(start_color='1A1A2E', end_color='1A1A2E', fill_type='solid')
+        hdr_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        cell_font = Font(name='Inter', size=9)
+        cell_align = Alignment(vertical='center')
+        thin_border = Border(bottom=Side(style='thin', color='E4E4E7'))
+        alt_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
+        currency_cols = {'Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost', 'Revenue', 'Avg Revenue'}
 
-            # Style definitions
-            header_font = Font(name='Inter', bold=True, color='FFFFFF', size=10)
-            header_fill = PatternFill(start_color='1A1A2E', end_color='1A1A2E', fill_type='solid')
-            header_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
-            cell_font = Font(name='Inter', size=9)
-            cell_align = Alignment(vertical='center')
-            thin_border = Border(
-                bottom=Side(style='thin', color='E4E4E7')
-            )
-            alt_fill = PatternFill(start_color='F9FAFB', end_color='F9FAFB', fill_type='solid')
-            currency_cols = {'Unit Price', 'Discount', 'Total Sales', 'Profit', 'Shipping Cost'}
-
-            # Style header row
-            for col_idx, col_name in enumerate(df.columns, 1):
-                cell = ws.cell(row=1, column=col_idx)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_align
-
-            # Style data rows + auto-width
+        def style_sheet(ws, num_cols, num_rows):
+            """Apply standard header + data styling to a worksheet."""
+            for c in range(1, num_cols + 1):
+                cell = ws.cell(row=1, column=c)
+                cell.font = hdr_font
+                cell.fill = hdr_fill
+                cell.alignment = hdr_align
             col_widths = {}
-            for col_idx, col_name in enumerate(df.columns, 1):
-                col_widths[col_idx] = len(str(col_name)) + 2  # start with header width
-
-                for row_idx in range(2, len(df) + 2):
-                    cell = ws.cell(row=row_idx, column=col_idx)
+            for c in range(1, num_cols + 1):
+                col_widths[c] = len(str(ws.cell(row=1, column=c).value or '')) + 4
+                for r in range(2, num_rows + 2):
+                    cell = ws.cell(row=r, column=c)
                     cell.font = cell_font
                     cell.alignment = cell_align
                     cell.border = thin_border
-
-                    # Alternating row color
-                    if row_idx % 2 == 0:
+                    if r % 2 == 0:
                         cell.fill = alt_fill
-
-                    # Currency format
+                    col_name = ws.cell(row=1, column=c).value or ''
                     if col_name in currency_cols and cell.value is not None:
                         cell.number_format = '#,##0.00'
+                    val_len = len(str(cell.value)) if cell.value else 0
+                    col_widths[c] = max(col_widths[c], min(val_len + 3, 35))
+            for c, w in col_widths.items():
+                ws.column_dimensions[get_column_letter(c)].width = w
 
-                    # Track max width
-                    val_len = len(str(cell.value)) if cell.value is not None else 0
-                    col_widths[col_idx] = max(col_widths[col_idx], min(val_len + 2, 35))
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
 
-            # Apply column widths
-            for col_idx, width in col_widths.items():
-                ws.column_dimensions[get_column_letter(col_idx)].width = width
+            # ═══════════════════════════════════════
+            # Sheet 1: Sales Data (raw transactions)
+            # ═══════════════════════════════════════
+            df.to_excel(writer, index=False, sheet_name='Sales Data')
+            ws1 = writer.sheets['Sales Data']
+            style_sheet(ws1, len(df.columns), len(df))
+            ws1.freeze_panes = 'A2'
+            ws1.auto_filter.ref = ws1.dimensions
 
-            # Freeze header row + autofilter
-            ws.freeze_panes = 'A2'
-            ws.auto_filter.ref = ws.dimensions
-
-            # ── Sheet 2: Summary ──
-            summary_data = {
-                'Metric': [
-                    'Total Records',
-                    'Total Revenue',
-                    'Total Profit',
-                    'Profit Margin',
-                    'Avg Order Value',
-                    'Total Quantity Sold',
-                    'Avg Delivery Days',
-                    'Return Rate',
-                    'Unique Customers',
-                    'Unique Products',
-                    'Date Range',
-                    'Top Region',
-                    'Top Category',
-                ],
-                'Value': []
-            }
+            # ═══════════════════════════════════════
+            # Sheet 2: Summary KPIs
+            # ═══════════════════════════════════════
             total_rev = df['Total Sales'].sum() if 'Total Sales' in df.columns else 0
             total_profit = df['Profit'].sum() if 'Profit' in df.columns else 0
             margin = (total_profit / total_rev * 100) if total_rev > 0 else 0
             total_qty = df['Quantity'].sum() if 'Quantity' in df.columns else 0
-            avg_delivery = df['Delivery Days'].mean() if 'Delivery Days' in df.columns else 0
-            returned_count = (df['Returned'] == 'Yes').sum() if 'Returned' in df.columns else 0
-            return_rate = (returned_count / len(df) * 100) if len(df) > 0 else 0
-            unique_cust = df['Customer Name'].nunique() if 'Customer Name' in df.columns else 0
-            unique_prod = df['Product Name'].nunique() if 'Product Name' in df.columns else 0
-            date_range = ''
+            avg_del = df['Delivery Days'].mean() if 'Delivery Days' in df.columns else 0
+            ret_count = (df['Returned'] == 'Yes').sum() if 'Returned' in df.columns else 0
+            ret_rate = (ret_count / len(df) * 100) if len(df) > 0 else 0
+            u_cust = df['Customer Name'].nunique() if 'Customer Name' in df.columns else 0
+            u_prod = df['Product Name'].nunique() if 'Product Name' in df.columns else 0
+            date_rng = ''
             if 'Order Date' in df.columns and len(df) > 0:
-                date_range = f"{df['Order Date'].min()} to {df['Order Date'].max()}"
-            top_region = df.groupby('Region')['Total Sales'].sum().idxmax() if 'Region' in df.columns and len(df) > 0 else 'N/A'
+                date_rng = f"{df['Order Date'].min()} to {df['Order Date'].max()}"
+            top_reg = df.groupby('Region')['Total Sales'].sum().idxmax() if 'Region' in df.columns and len(df) > 0 else 'N/A'
             top_cat = df.groupby('Category')['Total Sales'].sum().idxmax() if 'Category' in df.columns and len(df) > 0 else 'N/A'
 
-            summary_data['Value'] = [
-                f"{len(df):,}",
-                f"${total_rev:,.2f}",
-                f"${total_profit:,.2f}",
-                f"{margin:.1f}%",
-                f"${(total_rev / len(df)):,.2f}" if len(df) > 0 else '$0.00',
-                f"{total_qty:,}",
-                f"{avg_delivery:.1f} days",
-                f"{return_rate:.1f}%",
-                f"{unique_cust:,}",
-                f"{unique_prod:,}",
-                date_range,
-                str(top_region),
-                str(top_cat),
-            ]
-
-            summary_df = pd.DataFrame(summary_data)
+            summary_df = pd.DataFrame({
+                'Metric': ['Total Records', 'Total Revenue', 'Total Profit', 'Profit Margin',
+                           'Avg Order Value', 'Total Quantity Sold', 'Avg Delivery Days',
+                           'Return Rate', 'Unique Customers', 'Unique Products',
+                           'Date Range', 'Top Region', 'Top Category'],
+                'Value': [f"{len(df):,}", f"${total_rev:,.2f}", f"${total_profit:,.2f}",
+                          f"{margin:.1f}%", f"${(total_rev/max(len(df),1)):,.2f}",
+                          f"{total_qty:,}", f"{avg_del:.1f} days", f"{ret_rate:.1f}%",
+                          f"{u_cust:,}", f"{u_prod:,}", date_rng, str(top_reg), str(top_cat)]
+            })
             summary_df.to_excel(writer, index=False, sheet_name='Summary')
             ws2 = writer.sheets['Summary']
+            style_sheet(ws2, 2, len(summary_df))
 
-            # Style summary sheet
-            for col_idx in range(1, 3):
-                cell = ws2.cell(row=1, column=col_idx)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = header_align
+            # ═══════════════════════════════════════
+            # Sheet 3: Revenue Trend + Line Chart
+            # ═══════════════════════════════════════
+            if 'Order Date' in df.columns and 'Total Sales' in df.columns:
+                df_temp = df.copy()
+                df_temp['Month'] = pd.to_datetime(df_temp['Order Date']).dt.to_period('M').astype(str)
+                monthly = df_temp.groupby('Month').agg(
+                    Revenue=('Total Sales', 'sum'),
+                    Profit=('Profit', 'sum'),
+                    Orders=('Order ID', 'count')
+                ).reset_index().sort_values('Month')
 
-            for row_idx in range(2, len(summary_data['Metric']) + 2):
-                ws2.cell(row=row_idx, column=1).font = Font(name='Inter', bold=True, size=10)
-                ws2.cell(row=row_idx, column=2).font = Font(name='Inter', size=10)
-                ws2.cell(row=row_idx, column=1).alignment = cell_align
-                ws2.cell(row=row_idx, column=2).alignment = cell_align
+                monthly.to_excel(writer, index=False, sheet_name='Revenue Trend')
+                ws3 = writer.sheets['Revenue Trend']
+                style_sheet(ws3, 4, len(monthly))
 
-            ws2.column_dimensions['A'].width = 22
-            ws2.column_dimensions['B'].width = 25
+                # Line chart: Revenue + Profit over months
+                chart = LineChart()
+                chart.title = "Monthly Revenue & Profit Trend"
+                chart.y_axis.title = "Amount ($)"
+                chart.x_axis.title = "Month"
+                chart.style = 10
+                chart.width = 22
+                chart.height = 13
+                cats = Reference(ws3, min_col=1, min_row=2, max_row=len(monthly) + 1)
+                rev_data = Reference(ws3, min_col=2, min_row=1, max_row=len(monthly) + 1)
+                pft_data = Reference(ws3, min_col=3, min_row=1, max_row=len(monthly) + 1)
+                chart.add_data(rev_data, titles_from_data=True)
+                chart.add_data(pft_data, titles_from_data=True)
+                chart.set_categories(cats)
+                chart.series[0].graphicalProperties.line.width = 25000
+                chart.series[1].graphicalProperties.line.width = 25000
+                ws3.add_chart(chart, f"A{len(monthly) + 4}")
+
+            # ═══════════════════════════════════════
+            # Sheet 4: Category Breakdown + Pie Chart
+            # ═══════════════════════════════════════
+            if 'Category' in df.columns and 'Total Sales' in df.columns:
+                cat_df = df.groupby('Category').agg(
+                    Revenue=('Total Sales', 'sum'),
+                    Profit=('Profit', 'sum'),
+                    Orders=('Order ID', 'count'),
+                    AvgPrice=('Unit Price', 'mean')
+                ).reset_index().sort_values('Revenue', ascending=False)
+                cat_df['AvgPrice'] = cat_df['AvgPrice'].round(2)
+                cat_df = cat_df.rename(columns={'AvgPrice': 'Avg Price'})
+
+                cat_df.to_excel(writer, index=False, sheet_name='Category Analysis')
+                ws4 = writer.sheets['Category Analysis']
+                style_sheet(ws4, 5, len(cat_df))
+
+                # Pie chart: Revenue by Category
+                pie = PieChart()
+                pie.title = "Revenue by Category"
+                pie.style = 10
+                pie.width = 18
+                pie.height = 13
+                labels = Reference(ws4, min_col=1, min_row=2, max_row=len(cat_df) + 1)
+                vals = Reference(ws4, min_col=2, min_row=1, max_row=len(cat_df) + 1)
+                pie.add_data(vals, titles_from_data=True)
+                pie.set_categories(labels)
+                ws4.add_chart(pie, f"A{len(cat_df) + 4}")
+
+            # ═══════════════════════════════════════
+            # Sheet 5: Regional Analysis + Bar Chart
+            # ═══════════════════════════════════════
+            if 'Region' in df.columns and 'Total Sales' in df.columns:
+                reg_df = df.groupby('Region').agg(
+                    Revenue=('Total Sales', 'sum'),
+                    Profit=('Profit', 'sum'),
+                    Orders=('Order ID', 'count'),
+                    Customers=('Customer Name', 'nunique')
+                ).reset_index().sort_values('Revenue', ascending=False)
+
+                reg_df.to_excel(writer, index=False, sheet_name='Regional Analysis')
+                ws5 = writer.sheets['Regional Analysis']
+                style_sheet(ws5, 5, len(reg_df))
+
+                # Bar chart: Revenue + Profit by Region
+                bar = BarChart()
+                bar.type = "col"
+                bar.title = "Revenue & Profit by Region"
+                bar.y_axis.title = "Amount ($)"
+                bar.style = 10
+                bar.width = 20
+                bar.height = 13
+                cats = Reference(ws5, min_col=1, min_row=2, max_row=len(reg_df) + 1)
+                rev_data = Reference(ws5, min_col=2, min_row=1, max_row=len(reg_df) + 1)
+                pft_data = Reference(ws5, min_col=3, min_row=1, max_row=len(reg_df) + 1)
+                bar.add_data(rev_data, titles_from_data=True)
+                bar.add_data(pft_data, titles_from_data=True)
+                bar.set_categories(cats)
+                ws5.add_chart(bar, f"A{len(reg_df) + 4}")
+
+            # ═══════════════════════════════════════
+            # Sheet 6: RFM Customer Segments + Chart
+            # ═══════════════════════════════════════
+            try:
+                from .models import AnalysisSession
+                session = queryset.first()
+                if session:
+                    session_obj = session.session if hasattr(session, 'session') else None
+                    rfm = AnalyticsService.get_rfm_segments(session=session_obj)
+                    if rfm is not None and not rfm.empty:
+                        seg_counts = rfm['segment'].value_counts().reset_index()
+                        seg_counts.columns = ['Segment', 'Customers']
+                        seg_counts = seg_counts.sort_values('Customers', ascending=False)
+
+                        seg_counts.to_excel(writer, index=False, sheet_name='Customer Segments')
+                        ws6 = writer.sheets['Customer Segments']
+                        style_sheet(ws6, 2, len(seg_counts))
+
+                        # Bar chart: Customer count by RFM segment
+                        seg_bar = BarChart()
+                        seg_bar.type = "col"
+                        seg_bar.title = "RFM Customer Segments"
+                        seg_bar.y_axis.title = "Number of Customers"
+                        seg_bar.style = 10
+                        seg_bar.width = 20
+                        seg_bar.height = 13
+                        cats = Reference(ws6, min_col=1, min_row=2, max_row=len(seg_counts) + 1)
+                        vals = Reference(ws6, min_col=2, min_row=1, max_row=len(seg_counts) + 1)
+                        seg_bar.add_data(vals, titles_from_data=True)
+                        seg_bar.set_categories(cats)
+                        ws6.add_chart(seg_bar, f"A{len(seg_counts) + 4}")
+            except Exception:
+                pass  # RFM is optional; don't break the export
 
         return output.getvalue()
 

@@ -63,7 +63,7 @@ ALIASES = {
     'customer name': [
         'customername', 'custname', 'cust_name', 'customer', 'name',
         'client', 'buyer', 'fullname', 'full_name', 'contactname',
-        'clientname', 'buyername', 'accountname',
+        'clientname', 'buyername', 'accountname', 'buyname', 'buyer name',
     ],
     'region': [
         'customerregion', 'customer_region', 'custregion', 'area', 'zone',
@@ -89,11 +89,13 @@ ALIASES = {
     ],
     'sub-category': [
         'subcategory', 'sub_category', 'subclass', 'subgroup',
-        'subtype', 'subsegment', 'productsubtype',
+        'subtype', 'subsegment', 'productsubtype', 'subdepartment',
+        'sub_department', 'subdiv', 'subbrand', 'subfamily',
     ],
     'quantity': [
         'qty', 'units', 'count', 'volume', 'numitems', 'pieces',
-        'noofunits', 'amount',
+        'noofunits', 'amount', 'unitssold', 'units_sold', 'unitsdelivered',
+        'itemcount', 'orderqty', 'orderedqty', 'dispatchedqty', 'soldunits',
     ],
     'unit price': [
         'unitprice', 'price', 'productprice', 'product_price', 'prodprice',
@@ -109,11 +111,15 @@ ALIASES = {
     'discount': [
         'disc', 'discount_pct', 'discountpercent', 'discountrate',
         'off', 'reduction', 'rebate', 'promo', 'markdown', 'offer',
+        'offerpercent', 'offer%', 'offerpct', 'discountamount',
+        'promodiscount', 'salediscount', 'coupon',
     ],
     'sales': [
         'revenue', 'totalsales', 'total_sales', 'totalamount', 'total_amount',
         'linetotal', 'grosssales', 'netsales', 'total', 'grandtotal',
         'saleamount', 'ordertotal', 'ordervalue', 'turnover',
+        'netrevenue', 'net_revenue', 'netamount', 'net_amount',
+        'invoiceamount', 'billamount', 'chargedamount', 'paidamount',
     ],
     'profit': [
         'netprofit', 'net_profit', 'margin', 'gain', 'profitmargin',
@@ -128,6 +134,7 @@ ALIASES = {
         'deliverytime', 'deliverytimedays', 'delivery_time_days',
         'shippingdays', 'transittime', 'leadtime', 'shipdays',
         'deliverydays', 'delivery_days', 'daystodeliver', 'tat',
+        'dispatchdays', 'dispatch_days', 'fulfillmentdays', 'cycledays',
     ],
     'returned': [
         'return', 'refunded', 'isreturned', 'is_returned',
@@ -136,9 +143,12 @@ ALIASES = {
     'shipping cost': [
         'shippingcost', 'shipping', 'freight', 'deliveryfee',
         'shipcharge', 'deliverycharge', 'logisticscost', 'postage',
+        'couriercharges', 'courier_charges', 'couriercost', 'handlingfee',
+        'dispatchcost', 'shippingfee', 'logisticsfee',
     ],
     'age': [
         'customerage', 'customer_age', 'userage', 'buyerage', 'custage',
+        'clientage', 'personage', 'age_years', 'ageyears',
     ],
     'gender': [
         'customergender', 'customer_gender', 'sex', 'usergender', 'custgender',
@@ -253,11 +263,11 @@ def combine_dataframes(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 
     combined = combined[EXPECTED_COLUMNS].copy()
 
-    # Dedup: if the same Order ID appears in multiple files, keep first
+    # Dedup: if the same Order ID + Product ID appears in multiple files, keep first
     before = len(combined)
-    combined.drop_duplicates(subset=['Order ID'], keep='first', inplace=True)
+    combined.drop_duplicates(subset=['Order ID', 'Product ID'], keep='first', inplace=True)
     if len(combined) < before:
-        print(f"  Deduped: {before} → {len(combined)} (removed {before - len(combined)} duplicate Order IDs)")
+        print(f"  Deduped: {before} → {len(combined)} (removed {before - len(combined)} duplicate rows)")
 
     print(f"  Final combined: {len(combined)} rows")
     return combined

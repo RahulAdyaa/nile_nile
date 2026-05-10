@@ -1,0 +1,26 @@
+Transaction ID,Purchase Date,Client ID,Buyer,Territory,Location,SKU,Item,Department,Subclass,Units,MRP,Cost Price,Off,Revenue,Tender,TAT,Refunded,Freight,Customer Age,Sex
+TXN-0001,2025-01-15,C-001,Priya Sharma,North,Delhi,S-101,OnePlus 12R,Electronics,Smartphones,2,"₹29,999","₹18,000",10,0,UPI,3,No,₹149,28,Female
+TXN-0002,15-02-2025,C-002,RAHUL KUMAR,West,MUMBAI,S-102,NIKE AIR MAX,Fashion,Footwear,1,8999,4500,20,0,Credit Card,5,No,0,35,Male
+TXN-0003,03/22/2025,C-003,ananya gupta,South,bangalore,S-103,instant pot,home & kitchen,appliances,1,$199.99,$89,15,0,Gpay,7,NO,$9.99,42.0,female
+TXN-0004,2025-03-10,C-004,Vikram Singh,Central,Bhopal,S-104,Atomic Habits,Books & Stationery,Non-Fiction,3,399,180,10,0,Cash On Delivery,4,false,25,29,M
+TXN-0005,2025-04-05,C-005,meera nair,South,Kochi,S-105,"Samsung TV 55""",Electronics,Televisions,1,55000,32000,5,0,NET BANKING,10,YES,299,51,F
+TXN-0006,2025-01-20,C-006,Deepak Verma,,,S-106,Prestige Mixer,Home & Kitchen,Appliances,2,4599,2200,0,0,Debit Card,3,No,0,38,Male
+TXN-0007,20-03-2025,C-007,Sunita Roy,East,Kolkata,N/A,N/A,N/A,N/A,1,1299,600,N/A,0,UPI,N/A,No,N/A,33,Female
+TXN-0008,2025-05-01,C-008,Arjun Patel,West,Ahmedabad,S-108,boAt Airdopes,Electronics,Headphones,2,"2,499","1,100",15,0,gpay,2,no,49,24,male
+  TXN-0009  ,  2025-02-14  ,  C-009  ,  Kavita Mehta  ,  North  ,  Jaipur  ,  S-109  ,  Cetaphil Cream  ,  Health & Beauty  ,  Skincare  ,  1  ,  799  ,  350  ,  0  ,  0  ,  Cash  ,  6  ,  No  ,  0  ,  45  ,  Female  
+TXN-0010,2025-03-25,C-010,null,North,null,S-110,Levi's 511 Jeans,Fashion,Men Clothing,1,3999,1800,10,0,UPI,4,None,79,null,Male
+TXN-0011,11-04-2025,C-011,Ritu Jain,West,Pune,S-111,Whey Protein 2kg,Health & Beauty,Fitness,1,2499,1200,5,0,Credit Card,3,No,99,27.0,Female
+TXN-0012,2025-01-30,C-012,Sanjay Kapoor,North,Delhi,S-112,Apple AirPods Pro,Electronics,Headphones,1,£249.99,£140,0.15,0,Credit Card,7,no,£12,40,Male
+TXN-0013,25-05-2025,C-013,Pooja Das,South,Chennai,S-113,Yoga Mat,Sports,Fitness,2,1299,600,10,2338.2,Debit Card,5,No,0,31,F
+TXN-0014,2025-04-12,C-014,Harish Rao,South,Hyderabad,S-114,Kurta Set,Fashion,Ethnic Wear,3,1599,700,0,0,UPI,4,No,0,55,M
+TXN-0001,2025-01-15,C-001,Priya Sharma,North,Delhi,S-101,OnePlus 12R,Electronics,Smartphones,2,"₹29,999","₹18,000",10,0,UPI,3,No,₹149,28,Female
+TXN-0015,2025-06-01,C-015,Anita Bose,East,Kolkata,S-115,Kurkure Pack,Groceries,Snacks,5,20,10,0,100,Cash On Delivery,1,No,0,22,Female
+TXN-0016,2025-03-01,C-016,Ravi Kumar,Central,Indore,S-116,Pen Drive 64GB,Electronics,Storage,0,599,300,0,0,UPI,2,No,0,19,Male
+TXN-0017,17-02-2025,C-017,Nisha Pillai,South,Trivandrum,S-117,Maggi Noodles,Groceries,Instant Food,10,14,7,0,0,Cash,1,No,0,26,Female
+TXN-0018,2025-04-20,C-018,Mohit Saxena,North,Lucknow,S-118,Fastrack Watch,Fashion,Accessories,1,2499,1100,--,0,Debit Card,5,No,--,44,Male
+txn-0019,19-01-2025,c-019,sundar pichai,south,bangalore,s-119,wireless mouse,electronics,peripherals,1,899,400,5,0,upi,3,no,29,37,male
+TXN-0020,2025-05-10,C-020,Pallavi Shah,West,Surat,S-120,Colgate Toothpaste,Health & Beauty,Oral Care,3,199,80,0,0,Gpay,2,No,0,,Female
+TXN-0021,21-03-2025,C-021,Kishore Naik,West,Nagpur,S-121,Basmati Rice 5kg,Groceries,Staples,2,499,280,0,0,Cash,3,No,-50,62,Male
+TXN-0022,2025-02-28,C-022,Geeta Iyer,South,Coimbatore,S-122,Johnson Baby Oil,Health & Beauty,Baby Care,1,249,100,0,0,undefined,2,No,undefined,34,undefined
+TXN-0023,2025-03-08,C-001,Priya Sharma,North,New Delhi,S-123,Philips Trimmer,Electronics,Grooming,1,1799,800,10,0,UPI,4,No,79,28,Female
+TXN-0024,24-04-2025,C-024,Rajesh Khanna,West,Mumbai,S-124,MacBook Pro M3,Electronics,Laptops,1,"2,49,900","1,60,000",5,0,EMI,7,No,499,48,Male

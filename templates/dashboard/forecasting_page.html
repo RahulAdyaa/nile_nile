@@ -4,9 +4,9 @@
 <div class="max-w-6xl mx-auto py-8">
     <div class="mb-8">
         <h1 class="text-3xl font-heading font-bold">Forecasting</h1>
-        <p class="text-sm text-brand-muted mt-1">
-            90-day revenue forecast using Holt-Winters model
-            {% if session %} — {{ session.name }}{% endif %}
+        <p class="text-sm text-brand-muted mt-0.5">Predicts your next 90 days of revenue using the Holt-Winters time-series model</p>
+        <p class="text-xs text-brand-muted/60 mt-1">
+            {% if session %}Session: <span class="font-semibold text-brand-text">{{ session.name }}</span>{% endif %}
         </p>
     </div>
 

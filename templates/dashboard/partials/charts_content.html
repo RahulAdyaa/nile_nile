@@ -58,6 +58,42 @@
             </div>
         </div>
 
+        <!-- RFM Tooltip Styles -->
+        <style>
+            .rfm-chip { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: help; }
+            .rfm-chip .rfm-tooltip {
+                display: none;
+                position: absolute;
+                bottom: calc(100% + 10px);
+                left: 50%;
+                transform: translateX(-50%);
+                width: 240px;
+                background: #0f0f1a;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 12px;
+                padding: 12px 14px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                z-index: 9999;
+                pointer-events: none;
+            }
+            .rfm-chip:hover .rfm-tooltip { display: block; }
+            .rfm-tooltip::after {
+                content: '';
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 6px solid transparent;
+                border-top-color: rgba(255,255,255,0.1);
+            }
+            .rfm-tooltip-title { font-size: 9px; font-family: monospace; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+            .rfm-tooltip-desc { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.65); }
+            .rfm-legend-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 5px; font-size: 10px; }
+            .rfm-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+            .rfm-legend-text { color: rgba(255,255,255,0.65); line-height: 1.4; }
+            .rfm-legend-label { font-weight: 700; color: rgba(255,255,255,0.9); }
+        </style>
+
         <div class="flex justify-between items-center bg-brand-bg/50 p-4 rounded-2xl border border-brand-border">
              <div class="flex items-center space-x-6">
                 <div class="flex items-center space-x-2">
@@ -65,10 +101,48 @@
                     <span class="text-[9px] font-mono font-bold text-brand-text uppercase tracking-widest">System_Sync // Online</span>
                 </div>
                 {% if rfm_summary %}
-                <div class="hidden md:flex items-center space-x-4">
-                    <span class="text-[8px] font-mono text-brand-muted uppercase tracking-widest">Health:</span>
-                    <span class="text-[9px] font-mono font-bold text-green-600">CHAMPIONS: {{ rfm_summary.Champions|default:0 }}</span>
-                    <span class="text-[9px] font-mono font-bold text-brand-red">AT_RISK: {{ rfm_summary.At_Risk|default:0 }}</span>
+                <div class="hidden md:flex items-center space-x-3">
+
+                    <!-- HEALTH label with full legend tooltip -->
+                    <div class="rfm-chip">
+                        <span class="text-[8px] font-mono text-brand-muted uppercase tracking-widest underline decoration-dotted">Health:</span>
+                        <div class="rfm-tooltip">
+                            <div class="rfm-tooltip-title" style="color:#60a5fa;">📊 RFM Customer Segments</div>
+                            <div class="rfm-tooltip-desc" style="margin-bottom:8px;">Customers are scored 1–5 on <strong style="color:#fff">Recency</strong>, <strong style="color:#fff">Frequency</strong> &amp; <strong style="color:#fff">Monetary</strong> value, then grouped into segments.</div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#f59e0b;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">Champions</span> — Bought recently, often &amp; spend the most.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#10b981;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">Loyal Customers</span> — High frequency buyers who spend well.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#6366f1;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">Potential Loyalists</span> — Recent &amp; big spenders not yet frequent.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#22d3ee;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">New Customers</span> — Bought recently but only once.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#ef4444;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">At Risk</span> — Were great, now going cold. Needs win-back.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#f97316;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">Can't Lose Them</span> — High-value, high churn risk.</div></div>
+                            <div class="rfm-legend-row"><div class="rfm-legend-dot" style="background:#6b7280;"></div><div class="rfm-legend-text"><span class="rfm-legend-label">Lost</span> — Inactive for a long time, low engagement.</div></div>
+                        </div>
+                    </div>
+
+                    <!-- CHAMPIONS chip -->
+                    <div class="rfm-chip">
+                        <span class="text-[9px] font-mono font-bold text-green-500">
+                            🥇 CHAMPIONS: {{ rfm_summary.Champions|default:0 }}
+                        </span>
+                        <div class="rfm-tooltip">
+                            <div class="rfm-tooltip-title" style="color:#f59e0b;">🥇 Champions</div>
+                            <div class="rfm-tooltip-desc">Your <strong style="color:#fff">best customers</strong>. They bought recently, buy the most often, and spend the most money.<br><br>
+                            <strong style="color:#fff">Action:</strong> Reward with loyalty perks, early access, or VIP offers. They're your brand advocates.</div>
+                        </div>
+                    </div>
+
+                    <!-- AT_RISK chip -->
+                    <div class="rfm-chip">
+                        <span class="text-[9px] font-mono font-bold text-brand-red">
+                            ⚠ AT_RISK: {{ rfm_summary.At_Risk|default:0 }}
+                        </span>
+                        <div class="rfm-tooltip">
+                            <div class="rfm-tooltip-title" style="color:#ef4444;">⚠ At Risk</div>
+                            <div class="rfm-tooltip-desc">Customers who <strong style="color:#fff">used to be Champions or Loyal</strong> but haven't purchased recently — they're going cold.<br><br>
+                            <strong style="color:#fff">Action:</strong> Launch a win-back campaign with a discount or personalized message before they're fully lost.</div>
+                        </div>
+                    </div>
+
                 </div>
                 {% endif %}
              </div>

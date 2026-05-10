@@ -99,7 +99,8 @@
                 <span class="text-[9px] font-mono text-brand-muted uppercase tracking-[0.3em]">Analytics Report</span>
             </div>
             <h1 class="text-3xl font-heading font-extrabold text-brand-text tracking-tight">Session Report</h1>
-            <p class="text-sm text-brand-muted mt-1">
+            <p class="text-sm text-brand-muted mt-0.5">Printable summary of your session — KPIs, top products, customers, and monthly trends</p>
+            <p class="text-xs text-brand-muted/60 mt-1">
                 {% if session %}Session: <span class="font-semibold text-brand-text">{{ session.name }}</span>{% endif %}
                 {% if report %} · <span class="font-mono text-xs">{{ report.overview.date_range }}</span>{% endif %}
             </p>
