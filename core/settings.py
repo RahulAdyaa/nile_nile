@@ -33,8 +33,12 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+RAILWAY_PUBLIC_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if RAILWAY_PUBLIC_DOMAIN:
+    ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
 
 
 # Application definition
@@ -198,17 +202,15 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     CSRF_TRUSTED_ORIGINS = [
-        f'https://{RENDER_EXTERNAL_HOSTNAME}',
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-        'http://localhost:8001',
-        'http://127.0.0.1:8001'
-    ] if RENDER_EXTERNAL_HOSTNAME else [
         'http://localhost:8000',
         'http://127.0.0.1:8000',
         'http://localhost:8001',
         'http://127.0.0.1:8001'
     ]
+    if RENDER_EXTERNAL_HOSTNAME:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+    if RAILWAY_PUBLIC_DOMAIN:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_PUBLIC_DOMAIN}')
 else:
     # Explicitly disable for local development
     SECURE_SSL_REDIRECT = False

@@ -1,0 +1,3 @@
+web: gunicorn core.wsgi:application
+worker: celery -A core worker -l info
+beat: celery -A core beat -l info
