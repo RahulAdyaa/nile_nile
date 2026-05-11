@@ -184,8 +184,9 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-# ─── AI Analytics (Groq — free open-source LLM) ──────────────────────────────
+# ─── AI Analytics (Groq → Gemini fallback) ────────────────────────────────────
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 # ─── Production Security ──────────────────────────────────────────────────────
 if not DEBUG:

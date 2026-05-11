@@ -1,14 +1,12 @@
 """
 AI-powered Natural Language Analytics Service.
 
-Uses Groq API (free tier) with open-source Llama 3.3 70B to answer business
-questions by analyzing real sales data. The AI never sees raw data — it receives
-pre-computed statistical summaries and aggregations, then generates grounded,
-accurate answers.
+Multi-provider architecture with automatic fallback:
+  1. Groq  (Llama 3.3 70B) — fast, free, open-source
+  2. Google Gemini (2.0 Flash) — free fallback if Groq is blocked by firewall
 
-Provider: Groq (https://console.groq.com)
-Model: Llama 3.3 70B Versatile (open-source, Meta)
-Free tier: 30 requests/minute, 6000 tokens/minute
+The AI never sees raw data — it receives pre-computed statistical summaries
+and aggregations, then generates grounded, accurate answers.
 """
 
 import requests as http_requests
@@ -16,10 +14,15 @@ from django.conf import settings
 from django.db.models import Sum, Count, Avg, Min, Max, Q
 import pandas as pd
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
+# ─── Provider configs ─────────────────────────────────────────────────────────
 GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 GROQ_MODEL = 'llama-3.3-70b-versatile'
+
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
 
 class AIAnalyticsService:
@@ -29,7 +32,7 @@ class AIAnalyticsService:
     Flow:
     1. Build a data context snapshot (aggregated stats, not raw rows)
     2. Construct a system prompt that makes the AI a data analyst
-    3. Send user question + data context to Groq (Llama 3.3 70B)
+    3. Try Groq first → fall back to Gemini if blocked
     4. Return the grounded answer
     """
 
@@ -50,15 +53,27 @@ class AIAnalyticsService:
         """
         Main entry point. Takes a natural language question and an AnalysisSession,
         returns the AI's answer as a string.
+
+        Tries Groq first, then Gemini as fallback.
         """
-        api_key = getattr(settings, 'GROQ_API_KEY', '')
-        if not api_key or api_key == 'your-groq-api-key-here':
+        groq_key = getattr(settings, 'GROQ_API_KEY', '')
+        gemini_key = getattr(settings, 'GEMINI_API_KEY', '')
+
+        has_groq = groq_key and groq_key != 'your-groq-api-key-here'
+        has_gemini = gemini_key and gemini_key != 'your-gemini-api-key-here'
+
+        if not has_groq and not has_gemini:
             return (
-                "⚠️ **Groq API key not configured.**\n\n"
-                "To enable AI analytics:\n"
+                "⚠️ **No AI API key configured.**\n\n"
+                "To enable AI analytics, add at least one key to your `.env` file:\n\n"
+                "**Option 1 — Groq (recommended):**\n"
                 "1. Visit [console.groq.com](https://console.groq.com)\n"
                 "2. Sign up (free) and create an API key\n"
-                "3. Add it to your `.env` file as `GROQ_API_KEY=your-key`\n"
+                "3. Add `GROQ_API_KEY=your-key` to `.env`\n\n"
+                "**Option 2 — Google Gemini (good for corporate networks):**\n"
+                "1. Visit [aistudio.google.com/apikey](https://aistudio.google.com/apikey)\n"
+                "2. Create an API key (free)\n"
+                "3. Add `GEMINI_API_KEY=your-key` to `.env`\n\n"
                 "4. Restart the server"
             )
 
@@ -67,9 +82,33 @@ class AIAnalyticsService:
         if not data_context:
             return "No sales data available in the current session. Please upload data first."
 
-        # Build the prompt
         system_prompt = cls._build_system_prompt(data_context)
 
+        # ── Try Groq first ──
+        if has_groq:
+            result = cls._call_groq(groq_key, system_prompt, question)
+            if result is not None:
+                return result
+            logger.warning("[Nile AI] Groq failed, trying Gemini fallback...")
+
+        # ── Fallback to Gemini ──
+        if has_gemini:
+            result = cls._call_gemini(gemini_key, system_prompt, question)
+            if result is not None:
+                return result
+
+        return (
+            "⚠️ **Both AI providers failed.**\n\n"
+            "This is likely due to network/firewall restrictions.\n"
+            "- **Groq** — may be blocked by your corporate firewall\n"
+            "- **Gemini** — check that your API key is valid\n\n"
+            "Try again later or check your network settings."
+        )
+
+    # ─── Provider: Groq ────────────────────────────────────────────────────────
+    @classmethod
+    def _call_groq(cls, api_key, system_prompt, question):
+        """Call Groq API. Returns answer string or None on failure."""
         try:
             response = http_requests.post(
                 GROQ_API_URL,
@@ -93,8 +132,6 @@ class AIAnalyticsService:
                 data = response.json()
                 return data['choices'][0]['message']['content']
 
-            # Handle specific HTTP errors
-            error_body = response.text
             if response.status_code == 401:
                 return (
                     "⚠️ **Invalid Groq API key.**\n\n"
@@ -108,15 +145,89 @@ class AIAnalyticsService:
                     "Groq free tier allows 30 requests/minute. "
                     "Please wait a moment and try again."
                 )
-            return f"⚠️ **API error ({response.status_code}):** {error_body[:200]}"
 
-        except http_requests.exceptions.Timeout:
-            return "⚠️ **Request timed out.** The AI took too long to respond. Please try again."
+            # Other errors → fall through to Gemini
+            logger.warning(f"[Nile AI] Groq HTTP {response.status_code}: {response.text[:200]}")
+            return None
+
         except http_requests.exceptions.ConnectionError:
-            return "⚠️ **Connection error.** Could not reach the Groq API. Check your internet connection."
+            logger.warning("[Nile AI] Groq connection refused (firewall?)")
+            return None
+        except http_requests.exceptions.Timeout:
+            logger.warning("[Nile AI] Groq request timed out")
+            return None
         except Exception as e:
-            return f"⚠️ **AI service error:** {str(e)}"
+            logger.warning(f"[Nile AI] Groq error: {e}")
+            return None
 
+    # ─── Provider: Google Gemini ───────────────────────────────────────────────
+    @classmethod
+    def _call_gemini(cls, api_key, system_prompt, question):
+        """Call Google Gemini API. Returns answer string or None on failure."""
+        try:
+            response = http_requests.post(
+                f'{GEMINI_API_URL}?key={api_key}',
+                headers={'Content-Type': 'application/json'},
+                json={
+                    'system_instruction': {
+                        'parts': [{'text': system_prompt}]
+                    },
+                    'contents': [
+                        {
+                            'parts': [{'text': question}]
+                        }
+                    ],
+                    'generationConfig': {
+                        'temperature': 0.3,
+                        'maxOutputTokens': 1500,
+                    }
+                },
+                timeout=30,
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                # Gemini response structure
+                candidates = data.get('candidates', [])
+                if candidates:
+                    parts = candidates[0].get('content', {}).get('parts', [])
+                    if parts:
+                        return parts[0].get('text', '')
+
+            if response.status_code == 400:
+                error_msg = response.json().get('error', {}).get('message', '')
+                logger.warning(f"[Nile AI] Gemini 400: {error_msg}")
+                return f"⚠️ **Gemini API error:** {error_msg[:200]}"
+
+            if response.status_code == 403:
+                return (
+                    "⚠️ **Invalid Gemini API key.**\n\n"
+                    "Please check your `GEMINI_API_KEY` in the `.env` file "
+                    "and make sure it's valid from "
+                    "[aistudio.google.com/apikey](https://aistudio.google.com/apikey)."
+                )
+
+            if response.status_code == 429:
+                return (
+                    "⚠️ **Gemini rate limit reached.**\n\n"
+                    "Free tier allows 15 requests/minute. "
+                    "Please wait a moment and try again."
+                )
+
+            logger.warning(f"[Nile AI] Gemini HTTP {response.status_code}: {response.text[:200]}")
+            return None
+
+        except http_requests.exceptions.ConnectionError:
+            logger.warning("[Nile AI] Gemini connection refused")
+            return None
+        except http_requests.exceptions.Timeout:
+            logger.warning("[Nile AI] Gemini request timed out")
+            return None
+        except Exception as e:
+            logger.warning(f"[Nile AI] Gemini error: {e}")
+            return None
+
+    # ─── Data Context Builder ──────────────────────────────────────────────────
     @classmethod
     def _build_data_context(cls, session):
         """
