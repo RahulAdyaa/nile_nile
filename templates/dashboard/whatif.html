@@ -278,7 +278,7 @@
 {% if baselines_obj %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const baselines = {{ baselines|safe }};
+    const baselines = JSON.parse('{{ baselines|safe }}');
     const csrfToken = '{{ csrf_token }}';
     const simulateUrl = '{% url "whatif_simulate" %}';
 

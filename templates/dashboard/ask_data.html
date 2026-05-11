@@ -146,7 +146,7 @@
     if (!form) return;
 
     // ─── Load chat history from the server (DB-backed) ───────────────────
-    const chatHistory = {{ chat_history|safe }};
+    const chatHistory = JSON.parse('{{ chat_history|escapejs }}');
 
     function restoreChat() {
         if (!chatHistory || chatHistory.length === 0) return false;
