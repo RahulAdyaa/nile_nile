@@ -42,13 +42,6 @@ No SQL. No Python scripting. No expensive BI tools. Just upload and explore.
 | 📤 **Multi-Format Export** | CSV + multi-sheet Excel reports with embedded charts (up to 50K rows) |
 | 🔐 **Role-Based Access** | Admin vs Analyst roles with JWT + OAuth (Google, GitHub) |
 | 📝 **Audit Trail** | Every login, upload, export, and ETL operation is logged |
-| ⏰ **Scheduled Tasks** | Celery Beat for automated reports, forecast cache refresh, and data cleanup |
-
----
-
-## 🖼️ Screenshots
-
-> _Screenshots can be added to a `screenshots/` directory and referenced here._
 
 ---
 
@@ -94,68 +87,123 @@ Browser (HTMX + Tailwind)
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (5 minutes)
 
 ### Prerequisites
 
-- **Python 3.10+**
-- **Git**
-- PostgreSQL _(optional — SQLite works out of the box)_
+| Requirement | Required? | Notes |
+|---|---|---|
+| Python 3.10+ | ✅ Yes | Check: `python --version` |
+| pip | ✅ Yes | Comes with Python |
+| Git | ✅ Yes | To clone the repo |
+| PostgreSQL | ❌ No | SQLite works out of the box |
 
-### 1. Clone & Install
+---
+
+### Step 1 — Clone and install dependencies
 
 ```bash
 git clone https://github.com/your-username/nile-analytics.git
 cd nile-analytics
 
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate        # macOS / Linux
-# venv\Scripts\activate         # Windows
 
+# Activate it
+source venv/bin/activate          # macOS / Linux
+# venv\Scripts\activate           # Windows (CMD)
+# .\venv\Scripts\Activate.ps1    # Windows (PowerShell)
+
+# Install all packages
 pip install -r requirements.txt
 ```
 
-### 2. Create `.env` file
+---
 
-Create a `.env` file in the project root:
+### Step 2 — Create the `.env` file
 
-```env
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-DATABASE_URL=sqlite:///db.sqlite3
-
-# Optional — AI "Ask Your Data" feature
-GROQ_API_KEY=           # https://console.groq.com/keys
-GEMINI_API_KEY=         # https://aistudio.google.com/apikey
-
-# Optional — Social login
-GOOGLE_OAUTH_CLIENT_ID=
-GOOGLE_OAUTH_SECRET=
-GITHUB_OAUTH_CLIENT_ID=
-GITHUB_OAUTH_SECRET=
-```
-
-### 3. Setup Database
+> ⚠️ **This is the most important step. The project will NOT start without a `.env` file.**
 
 ```bash
+cp .env.example .env
+```
+
+The default `.env.example` is pre-configured with **SQLite** — everything works immediately with zero database setup.
+
+**Optional AI keys** (for the "Ask Your Data" feature):
+
+| Provider | Free key from | Add to `.env` as |
+|---|---|---|
+| Groq (recommended) | https://console.groq.com/keys | `GROQ_API_KEY=your-key` |
+| Google Gemini | https://aistudio.google.com/apikey | `GEMINI_API_KEY=your-key` |
+
+> If you skip the AI keys, everything else works — only the AI chat feature is unavailable.
+
+---
+
+### Step 3 — Setup database and load data
+
+```bash
+# Create all database tables
 python manage.py migrate
+
+# Load pre-built data (34,500+ sales records + users + products)
 python manage.py loaddata fixtures/users.json
 python manage.py loaddata fixtures/initial_data.json
 ```
 
-Or create a fresh account:
+---
+
+### Step 4 — Create your login
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 4. Run
+Follow the prompts to set username, email, and password.
+
+---
+
+### Step 5 — Run the server
 
 ```bash
 python manage.py runserver
 ```
 
-Open **http://127.0.0.1:8000** 🎉
+Open **http://127.0.0.1:8000** in your browser and login with the account you just created. 🎉
+
+---
+
+### ⚡ TL;DR — Run everything in one go
+
+```bash
+git clone https://github.com/your-username/nile-analytics.git
+cd nile-analytics
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
+python manage.py loaddata fixtures/users.json
+python manage.py loaddata fixtures/initial_data.json
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+---
+
+## ❓ Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| `ModuleNotFoundError: No module named '...'` | Make sure your virtualenv is activated and run `pip install -r requirements.txt` |
+| `django.core.exceptions.ImproperlyConfigured` | You're missing the `.env` file. Run `cp .env.example .env` |
+| `OperationalError: no such table` | Run `python manage.py migrate` |
+| Port 8000 already in use | Kill it: `lsof -ti:8000 \| xargs kill` (Mac/Linux) or use `python manage.py runserver 8080` |
+| AI "Ask Your Data" not working | Add `GROQ_API_KEY` or `GEMINI_API_KEY` to your `.env` file |
+| OAuth login buttons don't work | Add Google/GitHub OAuth credentials to `.env` (or just use username/password login) |
+| `loaddata` fails with UTF errors | Make sure you're using Python 3.10+ |
+| Forecast page shows no chart | Need at least 30 days of historical data loaded |
 
 ---
 
@@ -163,7 +211,7 @@ Open **http://127.0.0.1:8000** 🎉
 
 | Database | Setup | `.env` value |
 |---|---|---|
-| **SQLite** | No setup needed | `DATABASE_URL=sqlite:///db.sqlite3` |
+| **SQLite** (default) | No setup needed | `DATABASE_URL=sqlite:///db.sqlite3` |
 | **PostgreSQL** | `psql -U postgres -c "CREATE DATABASE nile_db;"` | `DATABASE_URL=postgres://user:pass@localhost:5432/nile_db` |
 | **MySQL** | `pip install mysqlclient` + create DB | `DATABASE_URL=mysql://user:pass@localhost:3306/nile_db` |
 
@@ -173,15 +221,15 @@ Open **http://127.0.0.1:8000** 🎉
 
 | Variable | Required | Description |
 |---|---|---|
-| `SECRET_KEY` | ✅ | Django secret key |
-| `DEBUG` | ❌ | `True` for dev (default: `True`) |
+| `SECRET_KEY` | ✅ | Django secret key (any random string) |
+| `DEBUG` | ❌ | `True` for development (default) |
 | `DATABASE_URL` | ❌ | DB connection string (default: SQLite) |
-| `GROQ_API_KEY` | ❌ | Groq API key — enables AI analytics |
-| `GEMINI_API_KEY` | ❌ | Google Gemini key — AI fallback provider |
-| `GOOGLE_OAUTH_CLIENT_ID` | ❌ | Google OAuth — social login |
-| `GOOGLE_OAUTH_SECRET` | ❌ | Google OAuth secret |
-| `GITHUB_OAUTH_CLIENT_ID` | ❌ | GitHub OAuth — social login |
-| `GITHUB_OAUTH_SECRET` | ❌ | GitHub OAuth secret |
+| `GROQ_API_KEY` | ❌ | Enables AI "Ask Your Data" feature |
+| `GEMINI_API_KEY` | ❌ | AI fallback provider |
+| `GOOGLE_OAUTH_CLIENT_ID` | ❌ | Google social login |
+| `GOOGLE_OAUTH_SECRET` | ❌ | Google social login |
+| `GITHUB_OAUTH_CLIENT_ID` | ❌ | GitHub social login |
+| `GITHUB_OAUTH_SECRET` | ❌ | GitHub social login |
 
 ---
 
@@ -210,8 +258,8 @@ nile-analytics/
 ├── static/             # CSS, JS, images
 ├── fixtures/           # Pre-built data (34,500+ records)
 ├── data/               # Sample CSV/Excel files for testing
+├── .env.example        # Template env file — copy to .env
 ├── requirements.txt
-├── .env                # Environment variables (create this)
 └── manage.py
 ```
 
@@ -261,14 +309,13 @@ celery -A core beat --loglevel=info
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 ## 👤 Author
 
-**Rahul Adya**
-- Full-Stack Developer | Data Engineer | AI Integration Lead
+**Rahul Adya** — Full-Stack Developer, Data Engineer, AI Integration Lead
 
 ---
 

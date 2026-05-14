@@ -1,6 +1,0 @@
-[build]
-builder = "NIXPACKS"
-buildCommand = "./build_files.sh"
-
-[deploy]
-startCommand = "gunicorn core.wsgi:application"
